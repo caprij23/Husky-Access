@@ -1,122 +1,98 @@
-import React, { useState } from "react";
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { Platform, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import OnboardingProgress from '../components/OnboardingProgress';
 
-type Option = {
-  id: string;
-  emoji: string;
-  label: string;
-};
-
-const OPTIONS: Option[] = [
-  { id: "wheelchair",  emoji: "♿", label: "Wheelchair access"   },
-  { id: "vision",      emoji: "👁️", label: "Vision Impairment"   },
-  { id: "cognitive",   emoji: "🧠", label: "Cognitive Impairment" },
-  { id: "navigation",  emoji: "🗺️", label: "Campus Navigation"   },
-];
-
-const styles: Record<string, React.CSSProperties> = {
-  screen: {
-    width: "100%",
-    height: "100vh",
-    background: "#fdf0f4",
-    display: "flex",
-    flexDirection: "column",
-    padding: "clamp(48px, 10vh, 80px) clamp(24px, 6vw, 36px) clamp(30px, 6vh, 50px)",
-    fontFamily: "-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif",
-  },
-  heading: {
-    fontSize: "clamp(24px, 6vw, 34px)",
-    fontWeight: 800,
-    color: "#1a1a1a",
-    lineHeight: 1.2,
-    letterSpacing: "-0.5px",
-    marginBottom: "clamp(20px, 5vh, 36px)",
-  },
-  options: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "clamp(10px, 2.5vh, 16px)",
-    flex: 1,
-  },
-  option: {
-    display: "flex",
-    alignItems: "center",
-    gap: "clamp(14px, 3.5vw, 20px)",
-    cursor: "pointer",
-  },
-  iconBox: {
-    width: "clamp(52px, 13vw, 68px)",
-    height: "clamp(52px, 13vw, 68px)",
-    background: "#fff",
-    borderRadius: "16px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
-    fontSize: "clamp(24px, 6vw, 32px)",
-  },
-  optionLabel: {
-    fontSize: "clamp(16px, 4.2vw, 21px)",
-    fontWeight: 600,
-    color: "#1a1a1a",
-  },
-  otherBtn: {
-    alignSelf: "center",
-    background: "#fff",
-    border: "1.5px solid #ddd",
-    borderRadius: "50px",
-    padding: "clamp(10px, 2.5vh, 14px) clamp(32px, 8vw, 48px)",
-    fontSize: "clamp(15px, 3.8vw, 18px)",
-    fontWeight: 500,
-    color: "#1a1a1a",
-    cursor: "pointer",
-    marginTop: "clamp(4px, 1vh, 10px)",
-  },
-  btn: {
-    width: "100%",
-    background: "#d8a8e8",
-    color: "#fff",
-    border: "none",
-    borderRadius: "50px",
-    padding: "clamp(16px, 3.5vh, 22px) 0",
-    fontSize: "clamp(16px, 4vw, 19px)",
-    fontWeight: 600,
-    cursor: "pointer",
-    marginTop: "clamp(16px, 3vh, 24px)",
-  },
-};
-
-export default function PreferencesScreen() {
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-
-  const toggle = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
+export default function ProfileReadyScreen() {
+  const router = useRouter();
 
   return (
-    <div style={styles.screen}>
-      <h2 style={styles.heading}>What would improve your campus experience?</h2>
-      <div style={styles.options}>
-        {OPTIONS.map((opt) => (
-          <div key={opt.id} style={styles.option} onClick={() => toggle(opt.id)}>
-            <div
-              style={{
-                ...styles.iconBox,
-                border: selected.has(opt.id) ? "2px solid #A855D8" : "2px solid transparent",
-              }}
-            >
-              {opt.emoji}
-            </div>
-            <span style={styles.optionLabel}>{opt.label}</span>
-          </div>
-        ))}
-        <button style={styles.otherBtn}>Other</button>
-      </div>
-      <button style={styles.btn}>Create account</button>
-    </div>
+    <SafeAreaView style={styles.screen}>
+      <StatusBar barStyle="dark-content" />
+
+      <OnboardingProgress step={5} />
+
+      <View style={styles.body}>
+        {/* Checkmark badge */}
+        <View style={styles.badge}>
+          <Ionicons name="checkmark" size={48} color="#fff" />
+        </View>
+
+        <Text style={styles.heading}>You're all set!</Text>
+        <Text style={styles.sub}>
+          Your HuskyAccess profile is ready. Start navigating UW campus with accessible routes built just for you.
+        </Text>
+
+        {/* Feature highlights */}
+        <View style={styles.features}>
+          {[
+            { icon: 'map-outline',           text: 'Accessible campus routes'      },
+            { icon: 'people-outline',        text: 'Community reports & tips'      },
+            { icon: 'notifications-outline', text: 'Real-time accessibility alerts' },
+          ].map(({ icon, text }) => (
+            <View key={text} style={styles.featureRow}>
+              <View style={styles.featureIcon}>
+                <Ionicons name={icon as any} size={20} color="#7209B7" />
+              </View>
+              <Text style={styles.featureText}>{text}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={styles.btn}
+          onPress={() => router.replace('/home')}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.btnText}>Enter HuskyAccess</Text>
+          <Ionicons name="arrow-forward" size={20} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: '#fff', paddingHorizontal: 24, paddingBottom: 24, paddingTop: 24 },
+  body:   { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  badge: {
+    width: 100, height: 100, borderRadius: 50,
+    backgroundColor: '#7209B7',
+    justifyContent: 'center', alignItems: 'center',
+    marginBottom: 28,
+    ...Platform.select({
+      ios:     { shadowColor: '#7209B7', shadowOpacity: 0.45, shadowRadius: 20, shadowOffset: { width: 0, height: 8 } },
+      android: { elevation: 8 },
+    }),
+  },
+  heading: {
+    fontSize: 32, fontWeight: '800', color: '#1a1a1a',
+    textAlign: 'center', marginBottom: 12, letterSpacing: -0.5,
+  },
+  sub: {
+    fontSize: 15, color: '#777', textAlign: 'center',
+    lineHeight: 23, marginBottom: 40, paddingHorizontal: 8,
+  },
+  features: { width: '100%', gap: 14 },
+  featureRow: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#F7F3FF', borderRadius: 14,
+    padding: 16, gap: 14,
+  },
+  featureIcon: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: '#EDE0FF', justifyContent: 'center', alignItems: 'center',
+  },
+  featureText: { fontSize: 15, fontWeight: '500', color: '#1a1a1a' },
+  footer: { width: '100%' },
+  btn: {
+    backgroundColor: '#7209B7', borderRadius: 50,
+    paddingVertical: 18, flexDirection: 'row',
+    justifyContent: 'center', alignItems: 'center', gap: 8,
+  },
+  btnText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+});

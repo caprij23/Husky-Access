@@ -1,92 +1,59 @@
-import React from "react";
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const styles: Record<string, React.CSSProperties> = {
-  screen: {
-    width: "100%",
-    height: "100vh",
-    background: "#fdf0f4",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "clamp(30px, 7vh, 60px) clamp(24px, 6vw, 40px) clamp(30px, 6vh, 50px)",
-    fontFamily: "-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif",
-  },
-  imgWrap: {
-    width: "100%",
-    maxWidth: "420px",
-    aspectRatio: "16/9",
-    borderRadius: "16px",
-    overflow: "hidden",
-    // Replace with your UW building photo:
-    // backgroundImage: "url('/images/uw_building.jpg')",
-    // backgroundSize: "cover",
-    // backgroundPosition: "center",
-    background: "linear-gradient(135deg, #f9a8d4, #c084fc, #a78bfa)",
-    flexShrink: 0,
-  },
-  middle: {
-    flex: 1,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "clamp(20px, 4vh, 40px) 0",
-  },
-  heading: {
-    fontSize: "clamp(24px, 6vw, 34px)",
-    fontWeight: 800,
-    color: "#1a1a1a",
-    textAlign: "center",
-    lineHeight: 1.25,
-    letterSpacing: "-0.5px",
-  },
-  bottom: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: "20px",
-    width: "100%",
-  },
-  btn: {
-    width: "100%",
-    maxWidth: "380px",
-    background: "#A855D8",
-    color: "#fff",
-    border: "none",
-    borderRadius: "50px",
-    padding: "clamp(16px, 3.5vh, 22px) 0",
-    fontSize: "clamp(16px, 4vw, 19px)",
-    fontWeight: 600,
-    cursor: "pointer",
-  },
-  dots: {
-    display: "flex",
-    gap: "8px",
-  },
-};
-
-const dotStyle = (active: boolean): React.CSSProperties => ({
-  width: "clamp(28px, 7vw, 36px)",
-  height: "4px",
-  borderRadius: "2px",
-  background: active ? "#A855D8" : "rgba(0,0,0,0.15)",
-});
+const { width } = Dimensions.get('window');
 
 export default function OnboardingScreen() {
+  const router = useRouter();
+
   return (
-    <div style={styles.screen}>
-      <div style={styles.imgWrap} />
-      <div style={styles.middle}>
-        <h2 style={styles.heading}>Making UW accessible one step at a time.</h2>
-      </div>
-      <div style={styles.bottom}>
-        <button style={styles.btn}>Create Account</button>
-        <div style={styles.dots}>
-          <div style={dotStyle(false)} />
-          <div style={dotStyle(true)} />
-          <div style={dotStyle(false)} />
-        </div>
-      </div>
-    </div>
+    <SafeAreaView style={styles.screen}>
+      {/* Gradient image placeholder — swap with <Image> of a UW building */}
+      <View style={styles.imgWrap} />
+
+      <View style={styles.middle}>
+        <Text style={styles.heading}>Making UW accessible{'\n'}one step at a time.</Text>
+      </View>
+
+      <View style={styles.bottom}>
+        <TouchableOpacity style={styles.btn} onPress={() => router.replace('/screen4_name')} activeOpacity={0.85}>
+          <Text style={styles.btnText}>Create Account</Text>
+        </TouchableOpacity>
+        <View style={styles.dots}>
+          <View style={styles.dot} />
+          <View style={[styles.dot, styles.dotActive]} />
+          <View style={styles.dot} />
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1, backgroundColor: '#fdf0f4',
+    alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 24, paddingVertical: 36,
+  },
+  imgWrap: {
+    width: '100%', aspectRatio: 16 / 9, borderRadius: 18,
+    backgroundColor: '#c084fc',
+  },
+  middle:   { flex: 1, justifyContent: 'center', paddingVertical: 28, alignItems: 'center' },
+  heading: {
+    fontSize: Math.min(32, width * 0.078), fontWeight: '800',
+    color: '#1a1a1a', textAlign: 'center', lineHeight: Math.min(32, width * 0.078) * 1.28,
+    letterSpacing: -0.4,
+  },
+  bottom:   { alignItems: 'center', gap: 20, width: '100%' },
+  btn: {
+    width: '100%', backgroundColor: '#7209B7',
+    borderRadius: 50, paddingVertical: 18, alignItems: 'center',
+  },
+  btnText:  { color: '#fff', fontSize: 17, fontWeight: '600' },
+  dots:     { flexDirection: 'row', gap: 8 },
+  dot:      { width: 28, height: 4, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.15)' },
+  dotActive:{ backgroundColor: '#7209B7' },
+});

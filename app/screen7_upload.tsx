@@ -1,122 +1,129 @@
-import React, { useState } from "react";
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { Image, Platform, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import OnboardingProgress from '../components/OnboardingProgress';
 
-type Option = {
-  id: string;
-  emoji: string;
-  label: string;
-};
+export default function UploadScreen() {
+  const router = useRouter();
+  const [photo, setPhoto] = useState<string | null>(null);
 
-const OPTIONS: Option[] = [
-  { id: "wheelchair",  emoji: "♿", label: "Wheelchair access"   },
-  { id: "vision",      emoji: "👁️", label: "Vision Impairment"   },
-  { id: "cognitive",   emoji: "🧠", label: "Cognitive Impairment" },
-  { id: "navigation",  emoji: "🗺️", label: "Campus Navigation"   },
-];
-
-const styles: Record<string, React.CSSProperties> = {
-  screen: {
-    width: "100%",
-    height: "100vh",
-    background: "#fdf0f4",
-    display: "flex",
-    flexDirection: "column",
-    padding: "clamp(48px, 10vh, 80px) clamp(24px, 6vw, 36px) clamp(30px, 6vh, 50px)",
-    fontFamily: "-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif",
-  },
-  heading: {
-    fontSize: "clamp(24px, 6vw, 34px)",
-    fontWeight: 800,
-    color: "#1a1a1a",
-    lineHeight: 1.2,
-    letterSpacing: "-0.5px",
-    marginBottom: "clamp(20px, 5vh, 36px)",
-  },
-  options: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "clamp(10px, 2.5vh, 16px)",
-    flex: 1,
-  },
-  option: {
-    display: "flex",
-    alignItems: "center",
-    gap: "clamp(14px, 3.5vw, 20px)",
-    cursor: "pointer",
-  },
-  iconBox: {
-    width: "clamp(52px, 13vw, 68px)",
-    height: "clamp(52px, 13vw, 68px)",
-    background: "#fff",
-    borderRadius: "16px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
-    fontSize: "clamp(24px, 6vw, 32px)",
-  },
-  optionLabel: {
-    fontSize: "clamp(16px, 4.2vw, 21px)",
-    fontWeight: 600,
-    color: "#1a1a1a",
-  },
-  otherBtn: {
-    alignSelf: "center",
-    background: "#fff",
-    border: "1.5px solid #ddd",
-    borderRadius: "50px",
-    padding: "clamp(10px, 2.5vh, 14px) clamp(32px, 8vw, 48px)",
-    fontSize: "clamp(15px, 3.8vw, 18px)",
-    fontWeight: 500,
-    color: "#1a1a1a",
-    cursor: "pointer",
-    marginTop: "clamp(4px, 1vh, 10px)",
-  },
-  btn: {
-    width: "100%",
-    background: "#d8a8e8",
-    color: "#fff",
-    border: "none",
-    borderRadius: "50px",
-    padding: "clamp(16px, 3.5vh, 22px) 0",
-    fontSize: "clamp(16px, 4vw, 19px)",
-    fontWeight: 600,
-    cursor: "pointer",
-    marginTop: "clamp(16px, 3vh, 24px)",
-  },
-};
-
-export default function PreferencesScreen() {
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-
-  const toggle = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+  // In production: use expo-image-picker here
+  const pickPhoto = () => {
+    // placeholder — integrate expo-image-picker when ready
   };
 
   return (
-    <div style={styles.screen}>
-      <h2 style={styles.heading}>What would improve your campus experience?</h2>
-      <div style={styles.options}>
-        {OPTIONS.map((opt) => (
-          <div key={opt.id} style={styles.option} onClick={() => toggle(opt.id)}>
-            <div
-              style={{
-                ...styles.iconBox,
-                border: selected.has(opt.id) ? "2px solid #A855D8" : "2px solid transparent",
-              }}
-            >
-              {opt.emoji}
-            </div>
-            <span style={styles.optionLabel}>{opt.label}</span>
-          </div>
-        ))}
-        <button style={styles.otherBtn}>Other</button>
-      </div>
-      <button style={styles.btn}>Create account</button>
-    </div>
+    <SafeAreaView style={styles.screen}>
+      <StatusBar barStyle="dark-content" />
+
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+          <Ionicons name="chevron-back" size={24} color="#1a1a1a" />
+        </TouchableOpacity>
+      </View>
+
+      <OnboardingProgress step={4} />
+
+      <View style={styles.body}>
+        <Text style={styles.heading}>Add a profile photo</Text>
+        <Text style={styles.sub}>Help others recognise you in the community.</Text>
+
+        {/* Avatar circle */}
+        <TouchableOpacity style={styles.avatar} onPress={pickPhoto} activeOpacity={0.8}>
+          {photo ? (
+            <Image source={{ uri: photo }} style={styles.avatarImg} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Ionicons name="person" size={56} color="#C9A8E8" />
+            </View>
+          )}
+          <View style={styles.cameraBtn}>
+            <Ionicons name="camera" size={18} color="#fff" />
+          </View>
+        </TouchableOpacity>
+
+        {/* Options */}
+        <View style={styles.options}>
+          <TouchableOpacity style={styles.optionRow} onPress={pickPhoto} activeOpacity={0.75}>
+            <View style={styles.optionIcon}>
+              <Ionicons name="camera-outline" size={22} color="#7209B7" />
+            </View>
+            <Text style={styles.optionLabel}>Take a photo</Text>
+            <Ionicons name="chevron-forward" size={18} color="#ccc" />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <TouchableOpacity style={styles.optionRow} onPress={pickPhoto} activeOpacity={0.75}>
+            <View style={styles.optionIcon}>
+              <Ionicons name="images-outline" size={22} color="#7209B7" />
+            </View>
+            <Text style={styles.optionLabel}>Choose from library</Text>
+            <Ionicons name="chevron-forward" size={18} color="#ccc" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.footer}>
+        <TouchableOpacity style={styles.btn} onPress={() => router.replace('/screen8_profile')} activeOpacity={0.85}>
+          <Text style={styles.btnText}>{photo ? 'Continue' : 'Skip for now'}</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  screen:  { flex: 1, backgroundColor: '#fff', paddingHorizontal: 24, paddingBottom: 24 },
+  header:  { paddingTop: 8, marginBottom: 24 },
+  back: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: '#F5EEFF', justifyContent: 'center', alignItems: 'center',
+  },
+  body:    { flex: 1, alignItems: 'center' },
+  heading: { fontSize: 28, fontWeight: '800', color: '#1a1a1a', marginBottom: 8, letterSpacing: -0.4, alignSelf: 'flex-start' },
+  sub:     { fontSize: 14, color: '#777', marginBottom: 36, lineHeight: 21, alignSelf: 'flex-start' },
+  avatar: {
+    width: 140, height: 140, marginBottom: 40,
+  },
+  avatarPlaceholder: {
+    width: 140, height: 140, borderRadius: 70,
+    backgroundColor: '#F5EEFF',
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2, borderColor: '#E8D8F8',
+  },
+  avatarImg: { width: 140, height: 140, borderRadius: 70 },
+  cameraBtn: {
+    position: 'absolute', bottom: 4, right: 4,
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: '#7209B7',
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2.5, borderColor: '#fff',
+    ...Platform.select({
+      ios:     { shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
+      android: { elevation: 4 },
+    }),
+  },
+  options: {
+    width: '100%', backgroundColor: '#F7F3FF',
+    borderRadius: 16, overflow: 'hidden',
+  },
+  optionRow: {
+    flexDirection: 'row', alignItems: 'center',
+    padding: 16, gap: 14,
+  },
+  optionIcon: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: '#EDE0FF', justifyContent: 'center', alignItems: 'center',
+  },
+  optionLabel: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1a1a1a' },
+  divider: { height: 1, backgroundColor: '#EDE0FF', marginLeft: 70 },
+  footer:  { width: '100%' },
+  btn: {
+    backgroundColor: '#7209B7', borderRadius: 50,
+    paddingVertical: 18, alignItems: 'center',
+  },
+  btnText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+});

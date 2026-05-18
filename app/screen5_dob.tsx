@@ -1,134 +1,119 @@
-import React, { useState } from "react";
-
-const styles: Record<string, React.CSSProperties> = {
-  screen: {
-    width: "100%",
-    height: "100vh",
-    background: "#fdf0f4",
-    display: "flex",
-    flexDirection: "column",
-    padding: "clamp(48px, 10vh, 80px) clamp(24px, 6vw, 36px) clamp(30px, 6vh, 50px)",
-    fontFamily: "-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif",
-  },
-  content: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-  },
-  heading: {
-    fontSize: "clamp(26px, 6.5vw, 36px)",
-    fontWeight: 800,
-    color: "#1a1a1a",
-    lineHeight: 1.2,
-    letterSpacing: "-0.5px",
-    marginBottom: "clamp(6px, 1.5vh, 12px)",
-  },
-  subtitle: {
-    fontSize: "clamp(13px, 3.3vw, 16px)",
-    color: "#555",
-    lineHeight: 1.5,
-    marginBottom: "clamp(20px, 5vh, 36px)",
-  },
-  label: {
-    display: "block",
-    fontSize: "clamp(13px, 3.2vw, 15px)",
-    color: "#333",
-    fontWeight: 500,
-    marginBottom: "8px",
-  },
-  input: {
-    width: "100%",
-    background: "#fff",
-    border: "1.5px solid transparent",
-    borderRadius: "12px",
-    padding: "clamp(14px, 3vh, 18px) 16px",
-    fontSize: "clamp(15px, 3.8vw, 17px)",
-    color: "#aaa",
-    outline: "none",
-    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-  },
-  spacer: { flex: 1 },
-  checkboxRow: {
-    display: "flex",
-    alignItems: "flex-start",
-    gap: "12px",
-    marginBottom: "clamp(16px, 3vh, 24px)",
-  },
-  checkboxBox: {
-    width: "clamp(22px, 5.5vw, 28px)",
-    height: "clamp(22px, 5.5vw, 28px)",
-    borderRadius: "6px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: "pointer",
-    flexShrink: 0,
-  },
-  checkboxLabel: {
-    fontSize: "clamp(12px, 3vw, 14px)",
-    color: "#555",
-    lineHeight: 1.4,
-    paddingTop: "2px",
-  },
-  btn: {
-    width: "100%",
-    background: "#d8a8e8",
-    color: "#fff",
-    border: "none",
-    borderRadius: "50px",
-    padding: "clamp(16px, 3.5vh, 22px) 0",
-    fontSize: "clamp(16px, 4vw, 19px)",
-    fontWeight: 600,
-    cursor: "pointer",
-  },
-};
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useRef, useState } from 'react';
+import { Platform, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import OnboardingProgress from '../components/OnboardingProgress';
 
 export default function DOBScreen() {
-  const [dob, setDob]           = useState("");
-  const [checked, setChecked]   = useState(true);
-  const [focused, setFocused]   = useState(false);
+  const router  = useRouter();
+  const [month, setMonth] = useState('');
+  const [day,   setDay]   = useState('');
+  const [year,  setYear]  = useState('');
+  const dayRef  = useRef<TextInput>(null);
+  const yearRef = useRef<TextInput>(null);
 
-  const inputStyle: React.CSSProperties = {
-    ...styles.input,
-    borderColor: focused ? "#A855D8" : "transparent",
-    color: dob ? "#1a1a1a" : "#aaa",
-  };
+  const isComplete = month.length === 2 && day.length === 2 && year.length === 4;
 
   return (
-    <div style={styles.screen}>
-      <div style={styles.content}>
-        <h2 style={styles.heading}>What is your date of birth?</h2>
-        <p style={styles.subtitle}>We need your DOB to verify your account</p>
-        <div>
-          <label style={styles.label}>Date of birth</label>
-          <input
-            type="text"
-            placeholder="MM/DD/YYYY"
-            style={inputStyle}
-            value={dob}
-            onChange={(e) => setDob(e.target.value)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-          />
-        </div>
-      </div>
-      <div style={styles.spacer} />
-      <div style={styles.checkboxRow}>
-        <div
-          style={{ ...styles.checkboxBox, background: checked ? "#A855D8" : "#e5e7eb" }}
-          onClick={() => setChecked(!checked)}
-        >
-          {checked && (
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M2 7L5.5 10.5L12 3.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          )}
-        </div>
-        <span style={styles.checkboxLabel}>
-          Check box to be informed about marketing information or any special offer
-        </span>
-      </div>
-      <button style={styles.btn}>Continue</button>
-    </div>
+    <SafeAreaView style={styles.screen}>
+      <StatusBar barStyle="dark-content" />
+
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+          <Ionicons name="chevron-back" size={24} color="#1a1a1a" />
+        </TouchableOpacity>
+      </View>
+
+      <OnboardingProgress step={2} />
+
+      <View style={styles.body}>
+        <Text style={styles.heading}>When were you born?</Text>
+        <Text style={styles.sub}>We use your date of birth to verify your account.</Text>
+
+        <View style={styles.dateRow}>
+          <View style={styles.dateField}>
+            <Text style={styles.label}>Month</Text>
+            <TextInput
+              style={styles.dateInput}
+              placeholder="MM"
+              placeholderTextColor="#bbb"
+              keyboardType="number-pad"
+              maxLength={2}
+              value={month}
+              onChangeText={v => { setMonth(v); if (v.length === 2) dayRef.current?.focus(); }}
+              returnKeyType="next"
+            />
+          </View>
+          <Text style={styles.sep}>/</Text>
+          <View style={styles.dateField}>
+            <Text style={styles.label}>Day</Text>
+            <TextInput
+              ref={dayRef}
+              style={styles.dateInput}
+              placeholder="DD"
+              placeholderTextColor="#bbb"
+              keyboardType="number-pad"
+              maxLength={2}
+              value={day}
+              onChangeText={v => { setDay(v); if (v.length === 2) yearRef.current?.focus(); }}
+              returnKeyType="next"
+            />
+          </View>
+          <Text style={styles.sep}>/</Text>
+          <View style={[styles.dateField, { flex: 2 }]}>
+            <Text style={styles.label}>Year</Text>
+            <TextInput
+              ref={yearRef}
+              style={styles.dateInput}
+              placeholder="YYYY"
+              placeholderTextColor="#bbb"
+              keyboardType="number-pad"
+              maxLength={4}
+              value={year}
+              onChangeText={setYear}
+              returnKeyType="done"
+            />
+          </View>
+        </View>
+      </View>
+
+      <TouchableOpacity
+        style={[styles.btn, !isComplete && styles.btnDisabled]}
+        onPress={() => router.replace('/screen6_preferences')}
+        disabled={!isComplete}
+        activeOpacity={0.85}
+      >
+        <Text style={styles.btnText}>Continue</Text>
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  screen:   { flex: 1, backgroundColor: '#fff', paddingHorizontal: 24, paddingBottom: 24 },
+  header:   { paddingTop: 8, marginBottom: 24 },
+  back: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: '#F5EEFF', justifyContent: 'center', alignItems: 'center',
+  },
+  body:     { flex: 1 },
+  heading:  { fontSize: 28, fontWeight: '800', color: '#1a1a1a', marginBottom: 8, letterSpacing: -0.4 },
+  sub:      { fontSize: 14, color: '#777', marginBottom: 36, lineHeight: 21 },
+  dateRow:  { flexDirection: 'row', alignItems: 'flex-end', gap: 6 },
+  dateField:{ flex: 1, gap: 8 },
+  label:    { fontSize: 13, fontWeight: '600', color: '#444', textAlign: 'center' },
+  dateInput: {
+    backgroundColor: '#F7F3FF', borderRadius: 14,
+    paddingHorizontal: 12, paddingVertical: Platform.OS === 'ios' ? 16 : 12,
+    fontSize: 20, fontWeight: '600', color: '#1a1a1a', textAlign: 'center',
+    borderWidth: 1.5, borderColor: '#E8D8F8',
+  },
+  sep:      { fontSize: 24, color: '#bbb', marginBottom: 14, marginHorizontal: 2 },
+  btn: {
+    backgroundColor: '#7209B7', borderRadius: 50,
+    paddingVertical: 18, alignItems: 'center',
+  },
+  btnDisabled: { backgroundColor: '#C9A8E8' },
+  btnText:  { color: '#fff', fontSize: 17, fontWeight: '700' },
+});

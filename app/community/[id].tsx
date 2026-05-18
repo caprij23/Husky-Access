@@ -274,7 +274,7 @@ export default function PostDetail() {
                   <View style={styles.replyInputRow}>
                     <TextInput
                       style={styles.input}
-                      placeholder={`Reply to ${replyingTo.user}...`}
+                      placeholder={`Reply to ${replyingTo?.user ?? ''}...`}
                       placeholderTextColor="#aaa"
                       value={replyText}
                       onChangeText={setReplyText}

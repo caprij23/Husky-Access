@@ -1,95 +1,57 @@
-import React from "react";
-
-const styles: Record<string, React.CSSProperties> = {
-  screen: {
-    width: "100%",
-    height: "100vh",
-    position: "relative",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-    overflow: "hidden",
-    fontFamily: "-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif",
-  },
-  bg: {
-    position: "absolute",
-    inset: 0,
-    // Replace with your UW campus photo:
-    // backgroundImage: "url('/images/uw_campus.jpg')",
-    // backgroundSize: "cover",
-    // backgroundPosition: "center",
-    background: "linear-gradient(160deg, #c084d8 0%, #7c3aed 40%, #4f1d8a 100%)",
-    zIndex: 0,
-  },
-  overlay: {
-    position: "absolute",
-    inset: 0,
-    background: "linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.25) 100%)",
-  },
-  top: {
-    position: "relative",
-    zIndex: 1,
-    padding: "clamp(40px, 8vh, 70px) clamp(20px, 5vw, 30px) 0",
-  },
-  heading: {
-    fontSize: "clamp(44px, 12vw, 72px)",
-    fontWeight: 700,
-    color: "#d946ef",
-    textShadow: "0 2px 20px rgba(0,0,0,0.15)",
-    letterSpacing: "-1px",
-  },
-  bottom: {
-    position: "relative",
-    zIndex: 1,
-    padding: "0 clamp(20px, 5vw, 30px) clamp(30px, 6vh, 50px)",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: "20px",
-  },
-  btn: {
-    width: "100%",
-    maxWidth: "380px",
-    background: "#A855D8",
-    color: "#fff",
-    border: "none",
-    borderRadius: "50px",
-    padding: "clamp(16px, 3.5vh, 22px) 0",
-    fontSize: "clamp(16px, 4vw, 19px)",
-    fontWeight: 600,
-    cursor: "pointer",
-    letterSpacing: "0.2px",
-  },
-  dots: {
-    display: "flex",
-    gap: "8px",
-  },
-};
-
-const dotStyle = (active: boolean): React.CSSProperties => ({
-  width: "clamp(28px, 7vw, 36px)",
-  height: "4px",
-  borderRadius: "2px",
-  background: active ? "#A855D8" : "rgba(255,255,255,0.5)",
-});
+import { useRouter } from 'expo-router';
+import React, { useEffect, useRef } from 'react';
+import { Animated, ImageBackground, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function WelcomeScreen() {
+  const router = useRouter();
+  const fade = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fade, { toValue: 1, duration: 800, useNativeDriver: true }).start();
+  }, []);
+
   return (
-    <div style={styles.screen}>
-      <div style={styles.bg}>
-        <div style={styles.overlay} />
-      </div>
-      <div style={styles.top}>
-        <h1 style={styles.heading}>Welcome</h1>
-      </div>
-      <div style={styles.bottom}>
-        <button style={styles.btn}>Lets get started</button>
-        <div style={styles.dots}>
-          <div style={dotStyle(true)} />
-          <div style={dotStyle(false)} />
-          <div style={dotStyle(false)} />
-        </div>
-      </div>
-    </div>
+    <ImageBackground
+      source={require('../assets/images/uw_bg_huskyaccess.png')}
+      style={styles.bg}
+      resizeMode="cover"
+    >
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <SafeAreaView style={styles.safe} edges={['bottom']}>
+        <Animated.View style={[styles.content, { opacity: fade }]}>
+          <Text style={styles.title}>Welcome</Text>
+          <View style={styles.bottom}>
+            <TouchableOpacity style={styles.btn} onPress={() => router.replace('/screen3_onboarding')} activeOpacity={0.85}>
+              <Text style={styles.btnText}>Let's get started</Text>
+            </TouchableOpacity>
+            <View style={styles.dots}>
+              <View style={[styles.dot, styles.dotActive]} />
+              <View style={styles.dot} />
+              <View style={styles.dot} />
+            </View>
+          </View>
+        </Animated.View>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
+
+const styles = StyleSheet.create({
+  bg:       { flex: 1 },
+  safe:     { flex: 1 },
+  content:  { flex: 1, justifyContent: 'space-between' },
+  title: {
+    color: '#CC44FF', fontSize: 44, fontWeight: '800',
+    textAlign: 'center', marginTop: 80,
+    textShadowColor: 'rgba(0,0,0,0.25)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 4,
+  },
+  bottom:   { alignItems: 'center', paddingBottom: 24, gap: 20 },
+  btn: {
+    backgroundColor: '#7209B7', paddingVertical: 16, paddingHorizontal: 60, borderRadius: 30,
+  },
+  btnText:  { color: '#fff', fontSize: 16, fontWeight: '600' },
+  dots:     { flexDirection: 'row', gap: 8 },
+  dot:      { width: 20, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.4)' },
+  dotActive:{ backgroundColor: '#7209B7', width: 28 },
+});

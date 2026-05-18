@@ -1,35 +1,31 @@
-import React from "react";
-
-const styles: Record<string, React.CSSProperties> = {
-  screen: {
-    width: "100%",
-    height: "100vh",
-    backgroundColor: "#A855D8",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logo: {
-    fontSize: "clamp(28px, 7vw, 42px)",
-    fontWeight: 300,
-    letterSpacing: "-0.5px",
-    fontFamily: "-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif",
-  },
-  husky: {
-    color: "rgba(255,255,255,0.6)",
-  },
-  access: {
-    color: "#fff",
-  },
-};
+import { useRouter } from 'expo-router';
+import React, { useEffect } from 'react';
+import { StatusBar, StyleSheet, Text, View } from 'react-native';
 
 export default function SplashScreen() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const t = setTimeout(() => router.replace('/screen2_welcome'), 2200);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
-    <div style={styles.screen}>
-      <div style={styles.logo}>
-        <span style={styles.husky}>Husky</span>
-        <span style={styles.access}>Access</span>
-      </div>
-    </div>
+    <View style={styles.root}>
+      <StatusBar barStyle="light-content" backgroundColor="#7209B7" />
+      <Text style={styles.logo}>
+        <Text style={styles.husky}>Husky</Text>
+        <Text style={styles.access}>Access</Text>
+      </Text>
+      <Text style={styles.sub}>Navigate UW, your way.</Text>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root:   { flex: 1, backgroundColor: '#7209B7', justifyContent: 'center', alignItems: 'center', gap: 12 },
+  logo:   { fontSize: 38 },
+  husky:  { color: 'rgba(255,255,255,0.75)', fontWeight: '300' },
+  access: { color: '#fff', fontWeight: '800' },
+  sub:    { color: 'rgba(255,255,255,0.6)', fontSize: 15 },
+});

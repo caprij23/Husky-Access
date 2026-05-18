@@ -29,7 +29,7 @@ export default function WelcomeScreen() {
           <View style={styles.bottomContainer}>
             <TouchableOpacity
               style={styles.button}
-              onPress={() => router.push('/home')}
+              onPress={() => router.push('/screen3_onboarding')}
             >
               <Text style={styles.buttonText}>Lets get started</Text>
             </TouchableOpacity>
