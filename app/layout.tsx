@@ -10,9 +10,13 @@ export default function RootLayout() {
         <Stack
           screenOptions={{
             headerShown: false,
-            animation: 'fade',
+            animation: 'slide_from_right',
           }}
-        />
+        >
+          <Stack.Screen name="index" options={{ animation: 'none' }} />
+          <Stack.Screen name="screen_1_splash" options={{ animation: 'none' }} />
+          <Stack.Screen name="screen2_welcome" options={{ animation: 'fade' }} />
+        </Stack>
       </View>
     </SafeAreaProvider>
   );

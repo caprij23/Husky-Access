@@ -277,7 +277,7 @@ export default function HomeScreen() {
       />
 
       {/* Settings button */}
-      <TouchableOpacity style={[styles.settingsBtn, { top: insets.top + 6 }]}>
+      <TouchableOpacity style={[styles.settingsBtn, { top: insets.top + 6 }]} onPress={() => router.push('/settings')}>
         <Ionicons name="settings-outline" size={22} color="#444" />
       </TouchableOpacity>
 
@@ -433,17 +433,22 @@ export default function HomeScreen() {
 
       {/* Bottom navigation */}
       <View style={[styles.bottomNav, { height: BOTTOM_NAV_H + insets.bottom, paddingBottom: insets.bottom }]}>
-        {[
-          { icon: 'home' as const,            label: 'Home',      active: true  },
-          { icon: 'warning-outline' as const, label: 'Report',    active: false },
-          { icon: 'mail-outline' as const,    label: 'Community', active: false },
-          { icon: 'person-outline' as const,  label: 'Profile',   active: false },
-        ].map(({ icon, label, active }) => (
-          <TouchableOpacity key={label} style={styles.navItem} activeOpacity={0.7}>
-            <Ionicons name={icon} size={24} color={active ? '#9B59B6' : '#888'} />
-            <Text style={[styles.navLabel, active && styles.navActive]}>{label}</Text>
-          </TouchableOpacity>
-        ))}
+        <TouchableOpacity style={styles.navItem} activeOpacity={0.7}>
+          <Ionicons name="home" size={24} color="#9B59B6" />
+          <Text style={[styles.navLabel, styles.navActive]}>Home</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.push('/reportscreen')}>
+          <Ionicons name="warning-outline" size={24} color="#888" />
+          <Text style={styles.navLabel}>Report</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.push('/community')}>
+          <Ionicons name="mail-outline" size={24} color="#888" />
+          <Text style={styles.navLabel}>Community</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.push('/profile_page')}>
+          <Ionicons name="person-outline" size={24} color="#888" />
+          <Text style={styles.navLabel}>Profile</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );

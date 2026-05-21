@@ -66,7 +66,7 @@ export default function SettingsScreen() {
 
         {/* Group 2 */}
         <View style={styles.group}>
-          <TouchableOpacity style={styles.row}>
+          <TouchableOpacity style={styles.row} onPress={() => router.push('/accessibilitysettings')}>
             <Text style={styles.rowIcon}>♿</Text>
             <Text style={styles.rowLabel}>Accessibility Settings</Text>
             <Text style={styles.chevron}>›</Text>
