@@ -1,12 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
+import { useUser } from '../context/UserContext';
 import { Animated, Platform, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import OnboardingProgress from '../components/OnboardingProgress';
 
 export default function NameScreen() {
   const router = useRouter();
+  const { setName } = useUser();
   const [firstName, setFirstName] = useState('');
   const [lastName,  setLastName]  = useState('');
 
@@ -25,7 +27,10 @@ export default function NameScreen() {
     Animated.sequence([
       Animated.timing(btnScale, { toValue: 0.96, duration: 80, useNativeDriver: true }),
       Animated.timing(btnScale, { toValue: 1,    duration: 80, useNativeDriver: true }),
-    ]).start(() => router.push('/screen5_dob'));
+    ]).start(() => {
+      setName(`${firstName.trim()} ${lastName.trim()}`);
+      router.push('/screen5_dob');
+    });
   };
 
   return (

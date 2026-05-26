@@ -437,7 +437,7 @@ export default function HomeScreen() {
           <Ionicons name="home" size={24} color="#9B59B6" />
           <Text style={[styles.navLabel, styles.navActive]}>Home</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.push('/reportscreen')}>
+        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.push('/reportscreen_1')}>
           <Ionicons name="warning-outline" size={24} color="#888" />
           <Text style={styles.navLabel}>Report</Text>
         </TouchableOpacity>

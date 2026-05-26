@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { useUser } from '../context/UserContext';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Image, Platform, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +9,7 @@ import OnboardingProgress from '../components/OnboardingProgress';
 
 export default function UploadScreen() {
   const router = useRouter();
+  const { setAvatarUri } = useUser();
   const [photo, setPhoto] = useState<string | null>(null);
 
   const opacity  = useRef(new Animated.Value(0)).current;
@@ -59,7 +61,10 @@ export default function UploadScreen() {
     Animated.sequence([
       Animated.timing(btnScale, { toValue: 0.96, duration: 80, useNativeDriver: true }),
       Animated.timing(btnScale, { toValue: 1,    duration: 80, useNativeDriver: true }),
-    ]).start(() => router.push('/screen8_profile'));
+    ]).start(() => {
+      setAvatarUri(photo);
+      router.push('/screen8_profile');
+    });
   };
 
   return (

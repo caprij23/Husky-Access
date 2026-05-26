@@ -1,12 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
+import { todayFormatted, useUser } from '../context/UserContext';
 import { Animated, Platform, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import OnboardingProgress from '../components/OnboardingProgress';
 
 export default function ProfileReadyScreen() {
   const router = useRouter();
+  const { setJoinDate } = useUser();
 
   const badgeScale     = useRef(new Animated.Value(0.4)).current;
   const contentOpacity = useRef(new Animated.Value(0)).current;
@@ -27,7 +29,10 @@ export default function ProfileReadyScreen() {
     Animated.sequence([
       Animated.timing(btnScale, { toValue: 0.96, duration: 80, useNativeDriver: true }),
       Animated.timing(btnScale, { toValue: 1,    duration: 80, useNativeDriver: true }),
-    ]).start(() => router.replace('/home'));
+    ]).start(() => {
+      setJoinDate(todayFormatted());
+      router.replace('/home');
+    });
   };
 
   return (

@@ -12,13 +12,12 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { usePosts } from '../context/PostsContext';
 
 const PURPLE = '#9B59B6';
 const PURPLE_DARK = '#7209B7';
 
-type VoteState = 'up' | 'down' | null;
-
-const INITIAL_POSTS = [
+const STATIC_POSTS = [
   {
     id: '1',
     category: 'blockage',
@@ -27,10 +26,6 @@ const INITIAL_POSTS = [
     time: '20m',
     title: 'Note for commuters',
     body: 'fyi the stairs down to husky stadium parking area are still closed off!!',
-    upvotes: 15,
-    comments: 3,
-    saved: false,
-    vote: null as VoteState,
   },
   {
     id: '2',
@@ -40,10 +35,6 @@ const INITIAL_POSTS = [
     time: '3h',
     title: 'I NEED THEM TO FIX KANE NOW.',
     body: "kane elevators haven't been fixed since fall q i swear. PLS",
-    upvotes: 43,
-    comments: 2,
-    saved: false,
-    vote: null as VoteState,
   },
   {
     id: '3',
@@ -53,40 +44,25 @@ const INITIAL_POSTS = [
     time: '3h',
     title: 'need help as new wheelchair user',
     body: 'does uw have any on campus resources? im newly in a wheelchair',
-    upvotes: 2,
-    comments: 1,
-    saved: false,
-    vote: null as VoteState,
   },
 ];
 
 export default function CommunityScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { postStates, handleVote, handleSave } = usePosts();
 
-  const [posts,       setPosts]       = useState(INITIAL_POSTS);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch,  setShowSearch]  = useState(false);
 
-  const handleVote = (id: string, dir: 'up' | 'down') => {
-    setPosts(prev =>
-      prev.map(p => {
-        if (p.id !== id) return p;
-        if (p.vote === dir) {
-          return { ...p, vote: null, upvotes: dir === 'up' ? p.upvotes - 1 : p.upvotes + 1 };
-        }
-        if (p.vote !== null) return p;
-        return { ...p, vote: dir, upvotes: dir === 'up' ? p.upvotes + 1 : Math.max(0, p.upvotes - 1) };
-      })
-    );
-  };
-
-  const handleSave = (id: string) => {
-    setPosts(prev => prev.map(p => p.id === id ? { ...p, saved: !p.saved } : p));
-  };
-
   const displayedPosts = useMemo(() => {
-    const sorted = [...posts].sort((a, b) => b.upvotes - a.upvotes);
+    const merged = STATIC_POSTS.map(post => {
+      const state = postStates.find(s => s.id === post.id) ?? {
+        upvotes: 0, vote: null as 'up' | 'down' | null, saved: false, commentCount: 0,
+      };
+      return { ...post, ...state };
+    });
+    const sorted = [...merged].sort((a, b) => b.upvotes - a.upvotes);
     if (!searchQuery.trim()) return sorted;
     const q = searchQuery.toLowerCase();
     return sorted.filter(p =>
@@ -95,7 +71,7 @@ export default function CommunityScreen() {
       p.user.toLowerCase().includes(q) ||
       p.category.toLowerCase().includes(q)
     );
-  }, [posts, searchQuery]);
+  }, [postStates, searchQuery]);
 
   const BOTTOM_NAV_H = 60;
 
@@ -194,7 +170,7 @@ export default function CommunityScreen() {
                         color={item.vote === 'up' ? PURPLE_DARK : '#555'}
                       />
                     </TouchableOpacity>
-                    <Text style={[styles.voteCount, item.vote === 'up' && styles.voteCountActive]}>
+                    <Text style={[styles.voteCount, item.vote !== null && styles.voteCountActive]}>
                       {item.upvotes}
                     </Text>
                     <TouchableOpacity
@@ -211,7 +187,7 @@ export default function CommunityScreen() {
 
                   <View style={styles.commentPill}>
                     <Ionicons name="chatbubble-outline" size={14} color="#777" />
-                    <Text style={styles.commentCount}>{item.comments}</Text>
+                    <Text style={styles.commentCount}>{item.commentCount}</Text>
                   </View>
 
                   <TouchableOpacity
@@ -232,13 +208,13 @@ export default function CommunityScreen() {
         )}
       </SafeAreaView>
 
-      {/* Bottom navigation — matches home.tsx exactly */}
+      {/* Bottom navigation */}
       <View style={[styles.bottomNav, { height: BOTTOM_NAV_H + insets.bottom, paddingBottom: insets.bottom }]}>
         <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.push('/home')}>
           <Ionicons name="home-outline" size={24} color="#888" />
           <Text style={styles.navLabel}>Home</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.push('/reportscreen')}>
+        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.push('/reportscreen_1')}>
           <Ionicons name="warning-outline" size={24} color="#888" />
           <Text style={styles.navLabel}>Report</Text>
         </TouchableOpacity>
@@ -259,7 +235,6 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#fff' },
   safe: { flex: 1 },
 
-  /* Header */
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -285,7 +260,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  /* Search */
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -307,13 +281,11 @@ const styles = StyleSheet.create({
     borderColor: '#E4D4F8',
   },
 
-  /* Empty */
   emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40, gap: 12 },
   emptyText:  { fontSize: 15, color: '#aaa', textAlign: 'center' },
 
   separator: { height: 1, backgroundColor: '#F5F0FF' },
 
-  /* Card */
   card: { paddingHorizontal: 20, paddingVertical: 16 },
   cardTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   avatar: {
@@ -327,7 +299,6 @@ const styles = StyleSheet.create({
   cardTitle:     { fontSize: 16, fontWeight: '700', color: '#111', marginBottom: 5, letterSpacing: -0.2 },
   cardBody:      { fontSize: 14, color: '#6B6B6B', lineHeight: 21, marginBottom: 14 },
 
-  /* Actions */
   actions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   votePill: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -344,7 +315,6 @@ const styles = StyleSheet.create({
   commentCount: { fontSize: 13, fontWeight: '600', color: '#777' },
   savePill:     { marginLeft: 'auto' },
 
-  /* Bottom nav — identical structure to home.tsx */
   bottomNav: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     flexDirection: 'row', backgroundColor: '#fff',

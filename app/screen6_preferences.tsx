@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
+import { useUser } from '../context/UserContext';
 import { Animated, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import OnboardingProgress from '../components/OnboardingProgress';
@@ -18,6 +19,7 @@ const OPTIONS: { id: string; icon: IoniconName; label: string; sub: string }[] =
 
 export default function PreferencesScreen() {
   const router = useRouter();
+  const { setAccessibilityNeeds } = useUser();
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const opacity  = useRef(new Animated.Value(0)).current;
@@ -42,7 +44,11 @@ export default function PreferencesScreen() {
     Animated.sequence([
       Animated.timing(btnScale, { toValue: 0.96, duration: 80, useNativeDriver: true }),
       Animated.timing(btnScale, { toValue: 1,    duration: 80, useNativeDriver: true }),
-    ]).start(() => router.push('/screen7_upload'));
+    ]).start(() => {
+      const labels = OPTIONS.filter(o => selected.has(o.id)).map(o => o.label);
+      setAccessibilityNeeds(labels);
+      router.push('/screen7_upload');
+    });
   };
 
   return (
