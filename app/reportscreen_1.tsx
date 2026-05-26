@@ -216,7 +216,7 @@ export default function ReportScreen1() {
 
       {/* Bottom nav */}
       <View style={[styles.bottomNav, { height: BOTTOM_NAV_H + insets.bottom, paddingBottom: insets.bottom }]}>
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.push('/home')}>
+        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace('/home')}>
           <Ionicons name="home-outline" size={24} color="#888" />
           <Text style={styles.navLabel}>Home</Text>
         </TouchableOpacity>

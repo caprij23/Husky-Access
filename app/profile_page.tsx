@@ -202,15 +202,15 @@ export default function ProfilePage() {
 
       {/* Bottom navigation */}
       <View style={[styles.bottomNav, { height: BOTTOM_NAV_H + insets.bottom, paddingBottom: insets.bottom }]}>
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.push('/home')}>
+        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace('/home')}>
           <Ionicons name="home-outline" size={24} color="#888" />
           <Text style={styles.navLabel}>Home</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.push('/reportscreen_1')}>
+        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace('/reportscreen_1')}>
           <Ionicons name="warning-outline" size={24} color="#888" />
           <Text style={styles.navLabel}>Report</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.push('/community')}>
+        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace('/community')}>
           <Ionicons name="mail-outline" size={24} color="#888" />
           <Text style={styles.navLabel}>Community</Text>
         </TouchableOpacity>

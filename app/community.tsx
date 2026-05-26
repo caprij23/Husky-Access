@@ -210,11 +210,11 @@ export default function CommunityScreen() {
 
       {/* Bottom navigation */}
       <View style={[styles.bottomNav, { height: BOTTOM_NAV_H + insets.bottom, paddingBottom: insets.bottom }]}>
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.push('/home')}>
+        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace('/home')}>
           <Ionicons name="home-outline" size={24} color="#888" />
           <Text style={styles.navLabel}>Home</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.push('/reportscreen_1')}>
+        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace('/reportscreen_1')}>
           <Ionicons name="warning-outline" size={24} color="#888" />
           <Text style={styles.navLabel}>Report</Text>
         </TouchableOpacity>
@@ -222,7 +222,7 @@ export default function CommunityScreen() {
           <Ionicons name="mail" size={24} color={PURPLE} />
           <Text style={[styles.navLabel, styles.navActive]}>Community</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.push('/profile_page')}>
+        <TouchableOpacity style={styles.navItem} activeOpacity={0.7} onPress={() => router.replace('/profile_page')}>
           <Ionicons name="person-outline" size={24} color="#888" />
           <Text style={styles.navLabel}>Profile</Text>
         </TouchableOpacity>

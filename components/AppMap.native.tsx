@@ -1,6 +1,7 @@
 import React, { forwardRef, useImperativeHandle, useRef } from 'react';
 import MapView, { Marker, Polyline, Region } from 'react-native-maps';
 import { StyleSheet, View } from 'react-native';
+import { WHEELCHAIR_ROUTES, LIMITED_MOBILITY_ROUTES } from '../constants/accessibleRoutes';
 
 export interface AppMapRef {
   animateToRegion: (region: Region, duration?: number) => void;
@@ -13,6 +14,7 @@ interface Props {
   markerTitle?: string;
   routeCoords?: { latitude: number; longitude: number }[];
   onUserLocation?: (coords: { latitude: number; longitude: number }) => void;
+  showAccessibleRoutes?: boolean;
 }
 
 const PIN = 34;
@@ -42,7 +44,7 @@ function Pin({ color }: { color: string }) {
 }
 
 const AppMap = forwardRef<AppMapRef, Props>(
-  ({ initialRegion, originCoordinate, markerCoordinate, markerTitle, routeCoords, onUserLocation }, ref) => {
+  ({ initialRegion, originCoordinate, markerCoordinate, markerTitle, routeCoords, onUserLocation, showAccessibleRoutes }, ref) => {
     const mapRef = useRef<MapView>(null);
 
     useImperativeHandle(ref, () => ({
@@ -63,6 +65,26 @@ const AppMap = forwardRef<AppMapRef, Props>(
           if (coord) onUserLocation?.({ latitude: coord.latitude, longitude: coord.longitude });
         }}
       >
+        {showAccessibleRoutes && LIMITED_MOBILITY_ROUTES.map(route => (
+          <Polyline
+            key={`lm-${route.id}`}
+            coordinates={route.coords}
+            strokeColor="#F39C12"
+            strokeWidth={3}
+            lineJoin="round"
+            lineCap="round"
+          />
+        ))}
+        {showAccessibleRoutes && WHEELCHAIR_ROUTES.map(route => (
+          <Polyline
+            key={`wc-${route.id}`}
+            coordinates={route.coords}
+            strokeColor="#1565C0"
+            strokeWidth={3}
+            lineJoin="round"
+            lineCap="round"
+          />
+        ))}
         {routeCoords && routeCoords.length > 1 && (
           <Polyline
             coordinates={routeCoords}

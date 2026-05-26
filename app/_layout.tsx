@@ -20,6 +20,10 @@ export default function RootLayout() {
               <Stack.Screen name="index" options={{ animation: 'none' }} />
               <Stack.Screen name="screen_1_splash" options={{ animation: 'none' }} />
               <Stack.Screen name="screen2_welcome" options={{ animation: 'fade' }} />
+              <Stack.Screen name="home" options={{ animation: 'none' }} />
+              <Stack.Screen name="reportscreen_1" options={{ animation: 'none' }} />
+              <Stack.Screen name="community" options={{ animation: 'none' }} />
+              <Stack.Screen name="profile_page" options={{ animation: 'none' }} />
             </Stack>
           </View>
         </SafeAreaProvider>
