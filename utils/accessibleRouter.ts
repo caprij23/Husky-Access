@@ -68,8 +68,8 @@ function buildGraph(routes: AccessibleRoute[]): Graph {
     }
   }
 
-  // Spatial grid — cell ≈ 22 m, so adjacent cells cover ~66 m
-  const CELL = 0.0002;
+  // Spatial grid — cell ≈ 55 m, so adjacent cells cover ~165 m
+  const CELL = 0.0005;
   const grid = new Map<string, number[]>();
   const key  = (lat: number, lon: number) =>
     `${Math.floor(lat / CELL)},${Math.floor(lon / CELL)}`;
@@ -80,8 +80,8 @@ function buildGraph(routes: AccessibleRoute[]): Graph {
     if (cell) cell.push(i); else grid.set(k, [i]);
   });
 
-  // Cross-segment connections: any two vertices within 20 m
-  const THRESHOLD = 20;
+  // Cross-segment connections: any two vertices within 50 m
+  const THRESHOLD = 50;
   const seen = new Set<number>(); // encoded pair
   const crossEdges: [number, number][] = [];
 
@@ -164,6 +164,7 @@ function nearestVertex(graph: Graph, coord: LatLon): number {
 }
 
 // ── Lazy-built graph cache ─────────────────────────────────────────────────
+// Rebuilt whenever THRESHOLD or route data changes
 let wheelchairGraph: Graph | null = null;
 let allGraph:        Graph | null = null;
 
@@ -195,7 +196,7 @@ export function getAccessibleRoute(
   const goalId  = nearestVertex(graph, dest);
   if (startId === -1 || goalId === -1) return null;
 
-  const MAX_SNAP = 400; // metres — if building is further than this from the network, bail
+  const MAX_SNAP = 300; // metres — if building is further than this from the network, fall back to OSRM
   const snapStart = haversine(start, { latitude: graph.vertices[startId].lat, longitude: graph.vertices[startId].lon });
   const snapGoal  = haversine(dest,  { latitude: graph.vertices[goalId].lat,  longitude: graph.vertices[goalId].lon });
   if (snapStart > MAX_SNAP || snapGoal > MAX_SNAP) return null;

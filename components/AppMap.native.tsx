@@ -15,6 +15,8 @@ interface Props {
   routeCoords?: { latitude: number; longitude: number }[];
   onUserLocation?: (coords: { latitude: number; longitude: number }) => void;
   showAccessibleRoutes?: boolean;
+  isNavigating?: boolean;
+  satellite?: boolean;
 }
 
 const PIN = 34;
@@ -44,7 +46,7 @@ function Pin({ color }: { color: string }) {
 }
 
 const AppMap = forwardRef<AppMapRef, Props>(
-  ({ initialRegion, originCoordinate, markerCoordinate, markerTitle, routeCoords, onUserLocation, showAccessibleRoutes }, ref) => {
+  ({ initialRegion, originCoordinate, markerCoordinate, markerTitle, routeCoords, onUserLocation, showAccessibleRoutes, isNavigating, satellite }, ref) => {
     const mapRef = useRef<MapView>(null);
 
     useImperativeHandle(ref, () => ({
@@ -57,6 +59,7 @@ const AppMap = forwardRef<AppMapRef, Props>(
         ref={mapRef}
         style={StyleSheet.absoluteFillObject}
         initialRegion={initialRegion}
+        mapType={satellite ? 'hybrid' : 'standard'}
         showsUserLocation
         showsMyLocationButton={false}
         showsCompass={false}
@@ -92,6 +95,7 @@ const AppMap = forwardRef<AppMapRef, Props>(
             strokeWidth={5}
             lineJoin="round"
             lineCap="round"
+            lineDashPattern={isNavigating ? [8, 10] : undefined}
           />
         )}
         {originCoordinate && (

@@ -17,15 +17,39 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppMap, { AppMapRef } from '../components/AppMap';
 import { useUser } from '../context/UserContext';
-import { getAccessibleRoute } from '../utils/accessibleRouter';
 import {
   NavBanner,
   NavStep,
   findClosestPointIndex,
+  formatDistance,
   generateSteps,
   getNavBanner,
   haversine,
+  sumRemainingDistance,
 } from '../utils/navigation';
+
+const C3D_KEY    = '0001085cc708b9cef47080f064612ca5';
+const C3D_MAP_ID = '2099';
+
+async function fetchCampusRoute(
+  fromLat: number, fromLng: number,
+  toLat: number,   toLng: number,
+  ada: boolean,
+): Promise<{ latitude: number; longitude: number }[] | null> {
+  const url =
+    `https://api.concept3d.com/wayfinding/v2?map=${C3D_MAP_ID}` +
+    `&stamp=${Date.now()}&fromLevel=0&toLevel=0&currentLevel=0` +
+    `&fromLat=${fromLat}&fromLng=${fromLng}` +
+    `&toLat=${toLat}&toLng=${toLng}` +
+    (ada ? '&ada' : '') +
+    `&key=${C3D_KEY}`;
+  const res  = await fetch(url);
+  const data = await res.json();
+  if (data.status !== 'ok' || !data.routes?.[0]?.fullPath?.length) return null;
+  return (data.routes[0].fullPath as [number, number][]).map(
+    ([lng, lat]) => ({ latitude: lat, longitude: lng })
+  );
+}
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -39,29 +63,183 @@ const UW_REGION = {
 type Building = { latitude: number; longitude: number; name: string };
 
 const BUILDINGS: Record<string, Building> = {
-  'kane':              { latitude: 47.65677180390987,  longitude: -122.30913957352482, name: 'Kane Hall' },
-  'kane hall':         { latitude: 47.65677180390987,  longitude: -122.30913957352482, name: 'Kane Hall' },
-  'odegaard':          { latitude: 47.65664678424963,  longitude: -122.31034214529939, name: 'Odegaard Library' },
-  'odegaard library':  { latitude: 47.65664678424963,  longitude: -122.31034214529939, name: 'Odegaard Library' },
-  'mary gates':        { latitude: 47.65325,           longitude: -122.30797,          name: 'Mary Gates Hall' },
-  'mary gates hall':   { latitude: 47.65325,           longitude: -122.30797,          name: 'Mary Gates Hall' },
-  'suzzallo':          { latitude: 47.656085819766396, longitude: -122.30841394468871, name: 'Suzzallo Library' },
-  'suzallo':           { latitude: 47.656085819766396, longitude: -122.30841394468871, name: 'Suzzallo Library' },
-  'suzzallo library':  { latitude: 47.656085819766396, longitude: -122.30841394468871, name: 'Suzzallo Library' },
-  'hub':               { latitude: 47.655504900140095, longitude: -122.30504158701689, name: 'HUB' },
-  'husky union':       { latitude: 47.655504900140095, longitude: -122.30504158701689, name: 'HUB' },
-  'pop health':        { latitude: 47.654906524384614, longitude: -122.31186353490023, name: 'Pop Health' },
-  'hans rosling':      { latitude: 47.654906524384614, longitude: -122.31186353490023, name: 'Pop Health' },
-  'population health': { latitude: 47.654906524384614, longitude: -122.31186353490023, name: 'Pop Health' },
+  // ── A ─────────────────────────────────────────────────────────────────
+  'allen library':          { latitude: 47.655354, longitude: -122.306946, name: 'Allen Library' },
+  'anderson hall':          { latitude: 47.651752, longitude: -122.307587, name: 'Anderson Hall' },
+  'architecture hall':      { latitude: 47.654591, longitude: -122.310860, name: 'Architecture Hall' },
+  // ── B ─────────────────────────────────────────────────────────────────
+  'bagley hall':            { latitude: 47.653427, longitude: -122.308876, name: 'Bagley Hall' },
+  'bagley':                 { latitude: 47.653427, longitude: -122.308876, name: 'Bagley Hall' },
+  'benson hall':            { latitude: 47.653038, longitude: -122.309578, name: 'Benson Hall' },
+  'benson':                 { latitude: 47.653038, longitude: -122.309578, name: 'Benson Hall' },
+  'bill gates center':      { latitude: 47.652897, longitude: -122.304482, name: 'Bill & Melinda Gates Center' },
+  'gates center':           { latitude: 47.652897, longitude: -122.304482, name: 'Bill & Melinda Gates Center' },
+  'cse2':                   { latitude: 47.652897, longitude: -122.304482, name: 'Bill & Melinda Gates Center' },
+  'bloedel hall':           { latitude: 47.651276, longitude: -122.307655, name: 'Bloedel Hall' },
+  'bloedel':                { latitude: 47.651276, longitude: -122.307655, name: 'Bloedel Hall' },
+  'burke museum':           { latitude: 47.660423, longitude: -122.311531, name: 'Burke Museum' },
+  // ── C ─────────────────────────────────────────────────────────────────
+  'chemistry building':     { latitude: 47.652897, longitude: -122.308403, name: 'Chemistry Building' },
+  'chemistry':              { latitude: 47.652897, longitude: -122.308403, name: 'Chemistry Building' },
+  'communications building':{ latitude: 47.656963, longitude: -122.305428, name: 'Communications Building' },
+  'communications':         { latitude: 47.656963, longitude: -122.305428, name: 'Communications Building' },
+  'condon hall':            { latitude: 47.656582, longitude: -122.316170, name: 'Condon Hall' },
+  // ── D ─────────────────────────────────────────────────────────────────
+  'denny hall':             { latitude: 47.658382, longitude: -122.308853, name: 'Denny Hall' },
+  'denny':                  { latitude: 47.658382, longitude: -122.308853, name: 'Denny Hall' },
+  // ── E ─────────────────────────────────────────────────────────────────
+  'ece building':           { latitude: 47.653561, longitude: -122.306305, name: 'ECE Building' },
+  'electrical engineering': { latitude: 47.653561, longitude: -122.306305, name: 'ECE Building' },
+  'ece':                    { latitude: 47.653561, longitude: -122.306305, name: 'ECE Building' },
+  // ── F ─────────────────────────────────────────────────────────────────
+  'fluke hall':             { latitude: 47.655842, longitude: -122.303268, name: 'Fluke Hall' },
+  'foege hall':             { latitude: 47.652267, longitude: -122.312988, name: 'Foege Hall' },
+  'bioengineering':         { latitude: 47.652267, longitude: -122.312988, name: 'Foege Hall' },
+  'genome sciences':        { latitude: 47.652267, longitude: -122.312988, name: 'Foege Hall' },
+  'foster school':          { latitude: 47.659138, longitude: -122.308571, name: 'Foster School of Business' },
+  'paccar hall':            { latitude: 47.659138, longitude: -122.308571, name: 'Foster School of Business' },
+  'paccar':                 { latitude: 47.659138, longitude: -122.308571, name: 'Foster School of Business' },
+  'foster':                 { latitude: 47.659138, longitude: -122.308571, name: 'Foster School of Business' },
+  // ── G ─────────────────────────────────────────────────────────────────
+  'gerberding hall':        { latitude: 47.655472, longitude: -122.309372, name: 'Gerberding Hall' },
+  'gerberding':             { latitude: 47.655472, longitude: -122.309372, name: 'Gerberding Hall' },
+  'gould hall':             { latitude: 47.654964, longitude: -122.312759, name: 'Gould Hall' },
+  'gowen hall':             { latitude: 47.656334, longitude: -122.307770, name: 'Gowen Hall' },
+  'guggenheim hall':        { latitude: 47.654251, longitude: -122.306381, name: 'Guggenheim Hall' },
+  'guggenheim':             { latitude: 47.654251, longitude: -122.306381, name: 'Guggenheim Hall' },
+  'guthrie hall':           { latitude: 47.653965, longitude: -122.310928, name: 'Guthrie Hall' },
+  // ── H ─────────────────────────────────────────────────────────────────
+  'haggett hall':           { latitude: 47.659260, longitude: -122.303680, name: 'Haggett Hall' },
+  'hall health':            { latitude: 47.656170, longitude: -122.304131, name: 'Hall Health Center' },
+  'hall health center':     { latitude: 47.656170, longitude: -122.304131, name: 'Hall Health Center' },
+  'health sciences':        { latitude: 47.650707, longitude: -122.308380, name: 'Health Sciences Library' },
+  'health sciences library':{ latitude: 47.650707, longitude: -122.308380, name: 'Health Sciences Library' },
+  'henry art gallery':      { latitude: 47.656525, longitude: -122.311600, name: 'Henry Art Gallery' },
+  'henry':                  { latitude: 47.656525, longitude: -122.311600, name: 'Henry Art Gallery' },
+  'hitchcock hall':         { latitude: 47.651894, longitude: -122.311531, name: 'Hitchcock Hall' },
+  'hub':                    { latitude: 47.655373, longitude: -122.305183, name: 'HUB' },
+  'husky union':            { latitude: 47.655373, longitude: -122.305183, name: 'HUB' },
+  'husky union building':   { latitude: 47.655373, longitude: -122.305183, name: 'HUB' },
+  'husky stadium':          { latitude: 47.650291, longitude: -122.301636, name: 'Husky Stadium' },
+  // ── I ─────────────────────────────────────────────────────────────────
+  'ima':                    { latitude: 47.653271, longitude: -122.301926, name: 'IMA' },
+  'intramural activities':  { latitude: 47.653271, longitude: -122.301926, name: 'IMA' },
+  // ── J–K ───────────────────────────────────────────────────────────────
+  'johnson hall':           { latitude: 47.654568, longitude: -122.308868, name: 'Johnson Hall' },
+  'kane':                   { latitude: 47.656601, longitude: -122.309212, name: 'Kane Hall' },
+  'kane hall':              { latitude: 47.656601, longitude: -122.309212, name: 'Kane Hall' },
+  'kincaid hall':           { latitude: 47.652637, longitude: -122.310646, name: 'Kincaid Hall' },
+  // ── L ─────────────────────────────────────────────────────────────────
+  'lander hall':            { latitude: 47.655678, longitude: -122.315018, name: 'Lander Hall' },
+  'lewis hall':             { latitude: 47.658848, longitude: -122.305367, name: 'Lewis Hall' },
+  'life sciences':          { latitude: 47.652252, longitude: -122.309883, name: 'Life Sciences Building' },
+  'life sciences building': { latitude: 47.652252, longitude: -122.309883, name: 'Life Sciences Building' },
+  'loew hall':              { latitude: 47.654266, longitude: -122.304512, name: 'Loew Hall' },
+  // ── M ─────────────────────────────────────────────────────────────────
+  'mary gates':             { latitude: 47.65513781785859, longitude: -122.3079826865079, name: 'Mary Gates Hall' },
+  'mary gates hall':        { latitude: 47.65513781785859, longitude: -122.3079826865079, name: 'Mary Gates Hall' },
+  'mcmahon hall':           { latitude: 47.658184, longitude: -122.303795, name: 'McMahon Hall' },
+  'meany hall':             { latitude: 47.655571, longitude: -122.310661, name: 'Meany Hall' },
+  'miller hall':            { latitude: 47.657200, longitude: -122.306335, name: 'Miller Hall' },
+  'molecular engineering':  { latitude: 47.654293, longitude: -122.309921, name: 'Molecular Engineering & Sciences' },
+  'more hall':              { latitude: 47.652515, longitude: -122.304863, name: 'More Hall' },
+  'music building':         { latitude: 47.657745, longitude: -122.305954, name: 'Music Building' },
+  // ── O ─────────────────────────────────────────────────────────────────
+  'odegaard':               { latitude: 47.656445, longitude: -122.310440, name: 'Odegaard Library' },
+  'odegaard library':       { latitude: 47.656445, longitude: -122.310440, name: 'Odegaard Library' },
+  'ougl':                   { latitude: 47.656445, longitude: -122.310440, name: 'Odegaard Library' },
+  // ── P ─────────────────────────────────────────────────────────────────
+  'padelford hall':         { latitude: 47.656940, longitude: -122.304268, name: 'Padelford Hall' },
+  'padelford':              { latitude: 47.656940, longitude: -122.304268, name: 'Padelford Hall' },
+  'parrington hall':        { latitude: 47.657394, longitude: -122.310287, name: 'Parrington Hall' },
+  'paul allen center':      { latitude: 47.653233, longitude: -122.305847, name: 'Paul G. Allen Center (CSE)' },
+  'cse':                    { latitude: 47.653233, longitude: -122.305847, name: 'Paul G. Allen Center (CSE)' },
+  'allen center':           { latitude: 47.653233, longitude: -122.305847, name: 'Paul G. Allen Center (CSE)' },
+  'physics':                { latitude: 47.653446, longitude: -122.310822, name: 'Physics/Astronomy Building' },
+  'physics astronomy':      { latitude: 47.653446, longitude: -122.310822, name: 'Physics/Astronomy Building' },
+  'pop health':             { latitude: 47.654906524384614, longitude: -122.31186353490023, name: 'Pop Health' },
+  'hans rosling':           { latitude: 47.654906524384614, longitude: -122.31186353490023, name: 'Pop Health' },
+  'population health':      { latitude: 47.654906524384614, longitude: -122.31186353490023, name: 'Pop Health' },
+  // ── R ─────────────────────────────────────────────────────────────────
+  'raitt hall':             { latitude: 47.657883, longitude: -122.307274, name: 'Raitt Hall' },
+  'roberts hall':           { latitude: 47.652046, longitude: -122.305077, name: 'Roberts Hall' },
+  // ── S ─────────────────────────────────────────────────────────────────
+  'savery hall':            { latitude: 47.657196, longitude: -122.308334, name: 'Savery Hall' },
+  'schmitz hall':           { latitude: 47.656555, longitude: -122.312752, name: 'Schmitz Hall' },
+  'smith hall':             { latitude: 47.656612, longitude: -122.307220, name: 'Smith Hall' },
+  'suzzallo':               { latitude: 47.655785, longitude: -122.308189, name: 'Suzzallo Library' },
+  'suzallo':                { latitude: 47.655785, longitude: -122.308189, name: 'Suzzallo Library' },
+  'suzzallo library':       { latitude: 47.655785, longitude: -122.308189, name: 'Suzzallo Library' },
+  // ── T ─────────────────────────────────────────────────────────────────
+  'thomson hall':           { latitude: 47.656532, longitude: -122.305809, name: 'Thomson Hall' },
+  // ── U ─────────────────────────────────────────────────────────────────
+  'uw medical center':      { latitude: 47.649403, longitude: -122.306999, name: 'UW Medical Center' },
+  'uwmc':                   { latitude: 47.649403, longitude: -122.306999, name: 'UW Medical Center' },
+  // ── W ─────────────────────────────────────────────────────────────────
+  'gates hall':             { latitude: 47.659267, longitude: -122.311386, name: 'William H. Gates Hall' },
+  'law school':             { latitude: 47.659267, longitude: -122.311386, name: 'William H. Gates Hall' },
+  'william h gates hall':   { latitude: 47.659267, longitude: -122.311386, name: 'William H. Gates Hall' },
 };
 
 const BUILDING_LIST = [
-  { key: 'kane',        display: 'Kane Hall' },
-  { key: 'odegaard',    display: 'Odegaard Library' },
-  { key: 'mary gates',  display: 'Mary Gates Hall' },
-  { key: 'suzzallo',    display: 'Suzzallo Library' },
-  { key: 'hub',         display: 'HUB' },
-  { key: 'pop health',  display: 'Pop Health' },
+  { key: 'allen library',           display: 'Allen Library' },
+  { key: 'anderson hall',           display: 'Anderson Hall' },
+  { key: 'architecture hall',       display: 'Architecture Hall' },
+  { key: 'bagley hall',             display: 'Bagley Hall' },
+  { key: 'benson hall',             display: 'Benson Hall' },
+  { key: 'bill gates center',       display: 'Bill & Melinda Gates Center' },
+  { key: 'bloedel hall',            display: 'Bloedel Hall' },
+  { key: 'burke museum',            display: 'Burke Museum' },
+  { key: 'chemistry building',      display: 'Chemistry Building' },
+  { key: 'communications building', display: 'Communications Building' },
+  { key: 'condon hall',             display: 'Condon Hall' },
+  { key: 'denny hall',              display: 'Denny Hall' },
+  { key: 'ece building',            display: 'ECE Building' },
+  { key: 'fluke hall',              display: 'Fluke Hall' },
+  { key: 'foege hall',              display: 'Foege Hall' },
+  { key: 'foster school',           display: 'Foster School of Business' },
+  { key: 'gerberding hall',         display: 'Gerberding Hall' },
+  { key: 'gould hall',              display: 'Gould Hall' },
+  { key: 'gowen hall',              display: 'Gowen Hall' },
+  { key: 'guggenheim hall',         display: 'Guggenheim Hall' },
+  { key: 'guthrie hall',            display: 'Guthrie Hall' },
+  { key: 'haggett hall',            display: 'Haggett Hall' },
+  { key: 'hall health',             display: 'Hall Health Center' },
+  { key: 'health sciences',         display: 'Health Sciences Library' },
+  { key: 'henry art gallery',       display: 'Henry Art Gallery' },
+  { key: 'hitchcock hall',          display: 'Hitchcock Hall' },
+  { key: 'hub',                     display: 'HUB' },
+  { key: 'husky stadium',           display: 'Husky Stadium' },
+  { key: 'ima',                     display: 'IMA' },
+  { key: 'johnson hall',            display: 'Johnson Hall' },
+  { key: 'kane',                    display: 'Kane Hall' },
+  { key: 'kincaid hall',            display: 'Kincaid Hall' },
+  { key: 'lander hall',             display: 'Lander Hall' },
+  { key: 'lewis hall',              display: 'Lewis Hall' },
+  { key: 'life sciences',           display: 'Life Sciences Building' },
+  { key: 'loew hall',               display: 'Loew Hall' },
+  { key: 'mary gates',              display: 'Mary Gates Hall' },
+  { key: 'mcmahon hall',            display: 'McMahon Hall' },
+  { key: 'meany hall',              display: 'Meany Hall' },
+  { key: 'miller hall',             display: 'Miller Hall' },
+  { key: 'molecular engineering',   display: 'Molecular Engineering & Sciences' },
+  { key: 'more hall',               display: 'More Hall' },
+  { key: 'music building',          display: 'Music Building' },
+  { key: 'odegaard',                display: 'Odegaard Library' },
+  { key: 'padelford hall',          display: 'Padelford Hall' },
+  { key: 'parrington hall',         display: 'Parrington Hall' },
+  { key: 'paul allen center',       display: 'Paul G. Allen Center (CSE)' },
+  { key: 'physics',                 display: 'Physics/Astronomy Building' },
+  { key: 'pop health',              display: 'Pop Health' },
+  { key: 'raitt hall',              display: 'Raitt Hall' },
+  { key: 'roberts hall',            display: 'Roberts Hall' },
+  { key: 'savery hall',             display: 'Savery Hall' },
+  { key: 'schmitz hall',            display: 'Schmitz Hall' },
+  { key: 'smith hall',              display: 'Smith Hall' },
+  { key: 'suzzallo',                display: 'Suzzallo Library' },
+  { key: 'thomson hall',            display: 'Thomson Hall' },
+  { key: 'uw medical center',       display: 'UW Medical Center' },
+  { key: 'gates hall',              display: 'William H. Gates Hall' },
 ];
 
 function getSuggestions(text: string) {
@@ -69,16 +247,18 @@ function getSuggestions(text: string) {
   if (q.length < 1) return [];
   return BUILDING_LIST.filter(
     b => b.display.toLowerCase().includes(q) || b.key.includes(q)
-  ).slice(0, 4);
+  ).slice(0, 5);
 }
 
 const FREQUENT = [
-  { id: 'kane',       label: 'Kane',       bg: '#4A0072' },
-  { id: 'odegaard',   label: 'Odegaard',   bg: '#C2185B' },
-  { id: 'mary-gates', label: 'Mary Gates', bg: '#E65100' },
-  { id: 'suzzallo',   label: 'Suzzallo',   bg: '#6A1B9A' },
-  { id: 'hub',        label: 'HUB',        bg: '#4527A0' },
-  { id: 'pop-health', label: 'Pop Health', bg: '#00695C' },
+  { id: 'kane',          label: 'Kane',       bg: '#4A0072' },
+  { id: 'odegaard',      label: 'Odegaard',   bg: '#C2185B' },
+  { id: 'suzzallo',      label: 'Suzzallo',   bg: '#6A1B9A' },
+  { id: 'hub',           label: 'HUB',        bg: '#4527A0' },
+  { id: 'foster school', label: 'Foster',     bg: '#1565C0' },
+  { id: 'paul allen center', label: 'CSE',    bg: '#00695C' },
+  { id: 'ima',           label: 'IMA',        bg: '#E65100' },
+  { id: 'pop health',    label: 'Pop Health', bg: '#2E7D32' },
 ];
 
 // Accessibility needs that trigger the UW accessible route graph
@@ -110,7 +290,10 @@ export default function HomeScreen() {
   const [routeCoords,  setRouteCoords] = useState<{ latitude: number; longitude: number }[]>([]);
   const [loadingRoute, setLoadingRoute] = useState(false);
   const [showAccessibleRoutes, setShowAccessibleRoutes] = useState(false);
+  const [satellite,            setSatellite]            = useState(false);
   const [routeType,    setRouteType]   = useState<'accessible' | 'general' | null>(null);
+  const [routeReady,   setRouteReady]  = useState(false);
+  const [routeSummary, setRouteSummary] = useState('');
   const [snapIdx,      setSnapIdx]     = useState(0);
 
   // ── GPS ───────────────────────────────────────────────────────────────
@@ -175,10 +358,18 @@ export default function HomeScreen() {
   ).current;
 
   // ── destination input ──────────────────────────────────────────────────
+  const clearRoute = () => {
+    setRouteCoords([]);
+    setRouteType(null);
+    setRouteReady(false);
+    setRouteSummary('');
+    routeCoordsRef.current = [];
+  };
+
   const handleToChange = (text: string) => {
     setToText(text);
     setToSugg(getSuggestions(text));
-    if (!text.trim()) { setDestination(null); setRouteCoords([]); setRouteType(null); }
+    if (!text.trim()) { setDestination(null); clearRoute(); }
   };
 
   const selectToSuggestion = useCallback((item: typeof BUILDING_LIST[0]) => {
@@ -187,8 +378,7 @@ export default function HomeScreen() {
     setToText(found.name);
     setDestination(found);
     setToSugg([]);
-    setRouteCoords([]);
-    setRouteType(null);
+    clearRoute();
     mapRef.current?.animateToRegion(
       { latitude: found.latitude, longitude: found.longitude, latitudeDelta: 0.005, longitudeDelta: 0.005 },
       800
@@ -201,8 +391,7 @@ export default function HomeScreen() {
     if (!found) return;
     setDestination(found);
     setToSugg([]);
-    setRouteCoords([]);
-    setRouteType(null);
+    clearRoute();
     mapRef.current?.animateToRegion(
       { latitude: found.latitude, longitude: found.longitude, latitudeDelta: 0.005, longitudeDelta: 0.005 },
       800
@@ -226,22 +415,35 @@ export default function HomeScreen() {
   }, []);
 
   // ── Navigation helpers ─────────────────────────────────────────────────
-  const startNavigation = useCallback((coords: { latitude: number; longitude: number }[]) => {
+  const beginNavigation = useCallback(() => {
+    const coords = routeCoordsRef.current;
+    if (!coords.length) return;
+
+    // Zoom into the start point so the user can orient themselves
+    const startPt = coords[0];
+    mapRef.current?.animateToRegion({
+      latitude:      startPt.latitude,
+      longitude:     startPt.longitude,
+      latitudeDelta: 0.002,
+      longitudeDelta: 0.002,
+    }, 800);
+
     const steps = generateSteps(coords);
-    routeCoordsRef.current  = coords;
     navStepsRef.current     = steps;
     closestIdxRef.current   = 0;
     lastAnimPosRef.current  = null;
     isNavigatingRef.current = true;
     setIsNavigating(true);
+    setRouteReady(false);
     setNavBanner(getNavBanner(steps, coords, 0));
-    snapTo(0); // collapse sheet so map is fully visible
-  }, [snapTo]);
+  }, []);
 
   const endNavigation = useCallback(() => {
     isNavigatingRef.current = false;
     setIsNavigating(false);
     setNavBanner(null);
+    setRouteReady(false);
+    setRouteSummary('');
     closestIdxRef.current  = 0;
     lastAnimPosRef.current = null;
   }, []);
@@ -289,22 +491,21 @@ export default function HomeScreen() {
 
     setLoadingRoute(true);
     try {
-      // Decide routing strategy based on the user's accessibility profile
+      // Wheelchair users get wheelchair-only paths; everyone else gets the full campus network
       const needsMobilityRoute = profile.accessibilityNeeds.some(n => MOBILITY_NEEDS.includes(n));
-      const hasAnyNeed         = profile.accessibilityNeeds.length > 0;
-      const routerType: 'wheelchair' | 'all' = needsMobilityRoute ? 'wheelchair' : 'all';
 
       let coords: { latitude: number; longitude: number }[] | null = null;
-      let usedAccessible = false;
+      let usedAccessible = needsMobilityRoute;
 
-      if (hasAnyNeed) {
-        // Try UW accessible route graph first
-        coords = getAccessibleRoute(start, destination, routerType);
-        if (coords) usedAccessible = true;
-      }
+      // Use the Concept3D campus routing API — same engine as map.uw.edu
+      coords = await fetchCampusRoute(
+        start.latitude, start.longitude,
+        destination.latitude, destination.longitude,
+        needsMobilityRoute,
+      );
 
       if (!coords) {
-        // Fall back to OSRM pedestrian routing
+        // Fall back to OSRM pedestrian routing only if campus API fails
         const url =
           `https://router.project-osrm.org/route/v1/foot/` +
           `${start.longitude},${start.latitude};${destination.longitude},${destination.latitude}` +
@@ -312,6 +513,7 @@ export default function HomeScreen() {
         const res  = await fetch(url);
         const data = await res.json();
         if (data.routes?.[0]) {
+          usedAccessible = false;
           coords = data.routes[0].geometry.coordinates.map(
             ([lon, lat]: [number, number]) => ({ latitude: lat, longitude: lon })
           );
@@ -320,10 +522,14 @@ export default function HomeScreen() {
 
       if (!coords || coords.length < 2) return;
 
+      // Store coords in ref so beginNavigation can access them without stale closure
+      routeCoordsRef.current = coords;
       setRouteCoords(coords);
       setRouteType(usedAccessible ? 'accessible' : 'general');
+      setRouteSummary(formatDistance(sumRemainingDistance(coords, 0)));
+      setRouteReady(true);
 
-      // Fit map to show the full route
+      // Zoom map out to show the complete route
       const lats = coords.map(c => c.latitude);
       const lons = coords.map(c => c.longitude);
       mapRef.current?.animateToRegion({
@@ -333,14 +539,13 @@ export default function HomeScreen() {
         longitudeDelta:(Math.max(...lons) - Math.min(...lons)) * 1.6 + 0.004,
       }, 1000);
 
-      // Start turn-by-turn navigation automatically
-      startNavigation(coords);
+      snapTo(0); // collapse sheet to show the Start Navigation card
     } catch (e) {
       console.error('Route fetch failed:', e);
     } finally {
       setLoadingRoute(false);
     }
-  }, [origin, destination, snapTo, profile.accessibilityNeeds, startNavigation]);
+  }, [origin, destination, snapTo, profile.accessibilityNeeds]);
 
   const handleDirectionsBtn = useCallback(() => {
     setShowFrom(true);
@@ -349,15 +554,13 @@ export default function HomeScreen() {
 
   const applyFrequent = useCallback((id: string) => {
     if (id === 'kane') { router.push('/kane'); return; }
-    const key   = id.replace('-', ' ');
-    const found = BUILDINGS[key];
+    const found = BUILDINGS[id];
     if (!found) return;
     setToText(found.name);
     setDestination(found);
     setShowFrom(false);
     setOrigin(null);
-    setRouteCoords([]);
-    setRouteType(null);
+    clearRoute();
     mapRef.current?.animateToRegion(
       { latitude: found.latitude, longitude: found.longitude, latitudeDelta: 0.005, longitudeDelta: 0.005 },
       800
@@ -388,6 +591,8 @@ export default function HomeScreen() {
         routeCoords={routeCoords}
         onUserLocation={handleUserLocation}
         showAccessibleRoutes={showAccessibleRoutes}
+        isNavigating={isNavigating}
+        satellite={satellite}
       />
 
       {/* ── Navigation banner ─────────────────────────────────────────── */}
@@ -441,6 +646,14 @@ export default function HomeScreen() {
           >
             <Ionicons name="accessibility-outline" size={20} color={showAccessibleRoutes ? '#fff' : '#444'} />
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.satelliteBtn, { top: insets.top + 6 }, satellite && styles.accessibleBtnActive]}
+            onPress={() => setSatellite(v => !v)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="globe-outline" size={20} color={satellite ? '#fff' : '#444'} />
+          </TouchableOpacity>
         </>
       )}
 
@@ -451,9 +664,55 @@ export default function HomeScreen() {
             <View style={styles.handle} />
           </View>
 
+          {/* ── Route-ready card: shown after route is calculated ───────── */}
+          {routeReady && !isNavigating && (
+            <View style={styles.routeReadyCard}>
+              <TouchableOpacity style={styles.routeReadyClose} onPress={clearRoute} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="close" size={16} color="#888" />
+              </TouchableOpacity>
+              <View style={styles.routeReadyInfo}>
+                <View style={styles.routeReadyBadge}>
+                  <Ionicons
+                    name={routeType === 'accessible' ? 'accessibility' : 'walk'}
+                    size={14}
+                    color="#fff"
+                  />
+                  <Text style={styles.routeReadyBadgeText}>
+                    {routeType === 'accessible' ? 'Accessible route' : 'Walking route'}
+                  </Text>
+                </View>
+                <Text style={styles.routeReadyDist}>{routeSummary}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.startNavBtn}
+                onPress={beginNavigation}
+                activeOpacity={0.88}
+              >
+                <Ionicons name="navigate" size={18} color="#fff" />
+                <Text style={styles.startNavBtnText}>Start Navigation</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.reportPathBtn}
+                onPress={() => router.push('/reportscreen_1')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="flag-outline" size={13} color="#8A6AAC" />
+                <Text style={styles.reportPathBtnText}>Missing a path? Report it</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* From field */}
-          {showFrom && (
+          {showFrom && !routeReady && (
             <View style={styles.fromSection}>
+              <TouchableOpacity
+                style={styles.routeReadyClose}
+                onPress={() => { setShowFrom(false); setFromText(''); setOrigin(null); clearRoute(); }}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="close" size={16} color="#888" />
+              </TouchableOpacity>
               <View style={styles.fromRow}>
                 <View style={styles.dotOrigin} />
                 <TextInput
@@ -685,6 +944,14 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   accessibleBtnActive: { backgroundColor: '#1565C0' },
+  satelliteBtn: {
+    position: 'absolute', right: 116,
+    width: 42, height: 42, borderRadius: 21,
+    backgroundColor: '#fff',
+    justifyContent: 'center', alignItems: 'center',
+    ...SHADOW_CARD,
+    zIndex: 10,
+  },
 
   // ── Bottom sheet ─────────────────────────────────────────────────────
   sheet: {
@@ -801,4 +1068,45 @@ const styles = StyleSheet.create({
   navItem:   { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3 },
   navLabel:  { fontSize: 11, color: '#888' },
   navActive: { color: '#9B59B6' },
+
+  // ── Route-ready card ──────────────────────────────────────────────────
+  routeReadyCard: {
+    marginHorizontal: 16, marginBottom: 10,
+    backgroundColor: '#F7F2FF',
+    borderRadius: 18, padding: 14,
+    borderWidth: 1.5, borderColor: '#DFC8F8',
+  },
+  routeReadyInfo: {
+    flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'space-between', marginBottom: 12,
+  },
+  routeReadyBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: '#7209B7', borderRadius: 20,
+    paddingHorizontal: 10, paddingVertical: 4,
+  },
+  routeReadyBadgeText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  routeReadyDist:      { color: '#5A0890', fontSize: 15, fontWeight: '700' },
+  startNavBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, backgroundColor: '#1565C0',
+    borderRadius: 14, paddingVertical: 14,
+    ...Platform.select({
+      ios:     { shadowColor: '#1565C0', shadowOpacity: 0.45, shadowRadius: 8, shadowOffset: { width: 0, height: 3 } },
+      android: { elevation: 5 },
+    }),
+  },
+  startNavBtnText: { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: 0.2 },
+  routeReadyClose: {
+    position: 'absolute', top: 4, left: 10,
+    width: 26, height: 26, borderRadius: 13,
+    backgroundColor: '#EEE',
+    justifyContent: 'center', alignItems: 'center',
+    zIndex: 1,
+  },
+  reportPathBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 5, marginTop: 10,
+  },
+  reportPathBtnText: { color: '#8A6AAC', fontSize: 12, fontWeight: '500' },
 });

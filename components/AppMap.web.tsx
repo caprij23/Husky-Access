@@ -13,6 +13,8 @@ interface Props {
   routeCoords?: { latitude: number; longitude: number }[];
   onUserLocation?: (coords: { latitude: number; longitude: number }) => void;
   showAccessibleRoutes?: boolean;
+  isNavigating?: boolean;
+  satellite?: boolean;
 }
 
 const AppMap = forwardRef<AppMapRef, Props>((_props, ref) => {
