@@ -10,6 +10,8 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { useUser } from '../context/UserContext';
+import { useRouter } from 'expo-router';
 
 const { width } = Dimensions.get("window");
 
@@ -38,27 +40,16 @@ interface PastReportsPageProps {
   onReportPress?: (report: Report) => void;
 }
 
-const DEFAULT_REPORTS: Report[] = [
-  {
-    id: "1",
-    title: "May 2nd - broken elevator at Kane Hall",
-    imageUri: undefined,
-  },
-  {
-    id: "2",
-    title: "May 7th - broken table in Kane 130",
-    imageUri: undefined,
-  },
-];
-
 export default function PastReportsPage({
-  name = "Caprice Johnson",
-  joinDate = "April 30th, 2026",
-  avatarUri,
-  reports = DEFAULT_REPORTS,
-  onBack,
   onReportPress,
-}: PastReportsPageProps) {
+}: Pick<PastReportsPageProps, 'onReportPress'>) {
+  const { profile } = useUser();
+  const router = useRouter();
+
+  const name      = profile.name || 'there';
+  const joinDate  = profile.joinDate || '';
+  const avatarUri = profile.avatarUri;
+  const reports   = profile.reports ?? [];
   const firstName = name.split(" ")[0];
 
   return (
@@ -89,7 +80,7 @@ export default function PastReportsPage({
         {/* Back + Title */}
         <TouchableOpacity
           style={styles.backRow}
-          onPress={onBack}
+          onPress={() => router.replace('/profile_page')}
           activeOpacity={0.7}
         >
           <Text style={styles.backChevron}>‹</Text>
@@ -97,6 +88,11 @@ export default function PastReportsPage({
         </TouchableOpacity>
 
         {/* Report Cards */}
+        {reports.length === 0 && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>No reports filed yet.</Text>
+          </View>
+        )}
         {reports.map((report) => (
           <TouchableOpacity
             key={report.id}
@@ -236,5 +232,14 @@ const styles = StyleSheet.create({
   cardImagePlaceholderText: {
     fontSize: 14,
     color: COLORS.textMuted,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyStateText: {
+    fontSize: 15,
+    color: COLORS.textMuted,
+    fontStyle: 'italic',
   },
 });

@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { useUser } from '../context/UserContext';
-import { Animated, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import OnboardingProgress from '../components/OnboardingProgress';
 
@@ -66,7 +66,7 @@ export default function PreferencesScreen() {
         <Text style={styles.heading}>How can we help{'\n'}you navigate?</Text>
         <Text style={styles.sub}>Select all that apply. You can change these later.</Text>
 
-        <View style={styles.list}>
+        <ScrollView style={styles.list} contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {OPTIONS.map(opt => {
             const active = selected.has(opt.id);
             return (
@@ -89,7 +89,7 @@ export default function PreferencesScreen() {
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
 
         <Animated.View style={{ transform: [{ scale: btnScale }] }}>
           <TouchableOpacity style={styles.btn} onPress={handleContinue} activeOpacity={0.9}>
@@ -111,7 +111,8 @@ const styles = StyleSheet.create({
   },
   heading:   { fontSize: 30, fontWeight: '800', letterSpacing: -0.6, color: '#111', marginBottom: 8 },
   sub:       { fontSize: 15, color: '#6B6B6B', marginBottom: 18, lineHeight: 22 },
-  list:      { flex: 1, gap: 10 },
+  list:        { flex: 1 },
+  listContent: { gap: 10, paddingBottom: 8 },
   option: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#F7F2FF', borderRadius: 16,

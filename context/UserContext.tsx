@@ -3,11 +3,19 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 
 const STORAGE_KEY = '@huskyaccess_user';
 
+export interface ReportEntry {
+  id: string;
+  title: string;
+  imageUri?: string;
+  date: string;
+}
+
 export interface UserProfile {
   name: string;
   joinDate: string;
   avatarUri: string | null;
   accessibilityNeeds: string[];
+  reports: ReportEntry[];
 }
 
 const DEFAULT_PROFILE: UserProfile = {
@@ -15,6 +23,7 @@ const DEFAULT_PROFILE: UserProfile = {
   joinDate: '',
   avatarUri: null,
   accessibilityNeeds: [],
+  reports: [],
 };
 
 interface UserContextType {
@@ -24,6 +33,7 @@ interface UserContextType {
   setAvatarUri: (uri: string | null) => void;
   setAccessibilityNeeds: (needs: string[]) => void;
   updateProfile: (partial: Partial<UserProfile>) => void;
+  addReport: (report: ReportEntry) => void;
 }
 
 const UserContext = createContext<UserContextType>({
@@ -33,6 +43,7 @@ const UserContext = createContext<UserContextType>({
   setAvatarUri: () => {},
   setAccessibilityNeeds: () => {},
   updateProfile: () => {},
+  addReport: () => {},
 });
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
@@ -45,11 +56,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         try { setProfile(JSON.parse(raw)); } catch {}
       }
     });
-  }, []);
-
-  const persist = useCallback((next: UserProfile) => {
-    setProfile(next);
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
   }, []);
 
   const updateProfile = useCallback((partial: Partial<UserProfile>) => {
@@ -65,8 +71,16 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const setAvatarUri         = useCallback((avatarUri: string|null) => updateProfile({ avatarUri }), [updateProfile]);
   const setAccessibilityNeeds= useCallback((accessibilityNeeds: string[]) => updateProfile({ accessibilityNeeds }), [updateProfile]);
 
+  const addReport = useCallback((report: ReportEntry) => {
+    setProfile(prev => {
+      const next = { ...prev, reports: [report, ...(prev.reports ?? [])] };
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+  }, []);
+
   return (
-    <UserContext.Provider value={{ profile, setName, setJoinDate, setAvatarUri, setAccessibilityNeeds, updateProfile }}>
+    <UserContext.Provider value={{ profile, setName, setJoinDate, setAvatarUri, setAccessibilityNeeds, updateProfile, addReport }}>
       {children}
     </UserContext.Provider>
   );

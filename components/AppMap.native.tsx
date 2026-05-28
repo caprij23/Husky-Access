@@ -1,7 +1,7 @@
 import React, { forwardRef, useImperativeHandle, useRef } from 'react';
 import MapView, { Marker, Polyline, Region } from 'react-native-maps';
-import { StyleSheet, View } from 'react-native';
-import { WHEELCHAIR_ROUTES, LIMITED_MOBILITY_ROUTES } from '../constants/accessibleRoutes';
+import { StyleSheet, Text, View } from 'react-native';
+import { WHEELCHAIR_ROUTES, LIMITED_MOBILITY_ROUTES, BUILDING_ACCESSIBLE_ENTRANCES } from '../constants/accessibleRoutes';
 
 export interface AppMapRef {
   animateToRegion: (region: Region, duration?: number) => void;
@@ -15,6 +15,8 @@ interface Props {
   routeCoords?: { latitude: number; longitude: number }[];
   onUserLocation?: (coords: { latitude: number; longitude: number }) => void;
   showAccessibleRoutes?: boolean;
+  showAssistedEntrances?: boolean;
+  accessibleEntranceCoords?: { latitude: number; longitude: number } | null;
   isNavigating?: boolean;
   satellite?: boolean;
 }
@@ -22,6 +24,7 @@ interface Props {
 const PIN = 34;
 const PURPLE = '#7209B7';
 const BLUE   = '#1565C0';
+const GREEN  = '#2E7D32';
 
 function Pin({ color }: { color: string }) {
   const hole = PIN * 0.37;
@@ -45,8 +48,35 @@ function Pin({ color }: { color: string }) {
   );
 }
 
+function AccessibleEntrancePin() {
+  return (
+    <View style={{ alignItems: 'center' }}>
+      <View style={{
+        backgroundColor: GREEN,
+        borderRadius: 20,
+        paddingHorizontal: 8,
+        paddingVertical: 5,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        borderWidth: 2,
+        borderColor: '#fff',
+      }}>
+        <Text style={{ fontSize: 13 }}>♿</Text>
+        <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>Accessible Entrance</Text>
+      </View>
+      <View style={{
+        width: 0, height: 0,
+        borderLeftWidth: 6, borderRightWidth: 6, borderTopWidth: 8,
+        borderLeftColor: 'transparent', borderRightColor: 'transparent',
+        borderTopColor: GREEN, marginTop: -1,
+      }} />
+    </View>
+  );
+}
+
 const AppMap = forwardRef<AppMapRef, Props>(
-  ({ initialRegion, originCoordinate, markerCoordinate, markerTitle, routeCoords, onUserLocation, showAccessibleRoutes, isNavigating, satellite }, ref) => {
+  ({ initialRegion, originCoordinate, markerCoordinate, markerTitle, routeCoords, onUserLocation, showAccessibleRoutes, showAssistedEntrances, accessibleEntranceCoords, isNavigating, satellite }, ref) => {
     const mapRef = useRef<MapView>(null);
 
     useImperativeHandle(ref, () => ({
@@ -88,6 +118,16 @@ const AppMap = forwardRef<AppMapRef, Props>(
             lineCap="round"
           />
         ))}
+        {showAssistedEntrances && Object.entries(BUILDING_ACCESSIBLE_ENTRANCES).map(([name, coord]) => (
+          <Marker
+            key={`ae-${name}`}
+            coordinate={coord}
+            title={name}
+            description="Accessible entrance"
+            pinColor={GREEN}
+            tracksViewChanges={false}
+          />
+        ))}
         {routeCoords && routeCoords.length > 1 && (
           <Polyline
             coordinates={routeCoords}
@@ -106,6 +146,17 @@ const AppMap = forwardRef<AppMapRef, Props>(
         {markerCoordinate && (
           <Marker coordinate={markerCoordinate} title={markerTitle} tracksViewChanges={false}>
             <Pin color={PURPLE} />
+          </Marker>
+        )}
+        {accessibleEntranceCoords && (
+          <Marker
+            coordinate={accessibleEntranceCoords}
+            title="Accessible Entrance"
+            description="Wheelchair-accessible entrance"
+            tracksViewChanges={false}
+            anchor={{ x: 0.5, y: 1 }}
+          >
+            <AccessibleEntrancePin />
           </Marker>
         )}
       </MapView>

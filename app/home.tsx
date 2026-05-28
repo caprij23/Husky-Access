@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppMap, { AppMapRef } from '../components/AppMap';
+import { BUILDING_ACCESSIBLE_ENTRANCES } from '../constants/accessibleRoutes';
 import { useUser } from '../context/UserContext';
 import {
   NavBanner,
@@ -290,6 +291,8 @@ export default function HomeScreen() {
   const [routeCoords,  setRouteCoords] = useState<{ latitude: number; longitude: number }[]>([]);
   const [loadingRoute, setLoadingRoute] = useState(false);
   const [showAccessibleRoutes, setShowAccessibleRoutes] = useState(false);
+  const showAssistedEntrances    = profile.accessibilityNeeds.some(n => MOBILITY_NEEDS.includes(n));
+  const accessibleEntranceCoords = destination ? (BUILDING_ACCESSIBLE_ENTRANCES[destination.name] ?? null) : null;
   const [satellite,            setSatellite]            = useState(false);
   const [routeType,    setRouteType]   = useState<'accessible' | 'general' | null>(null);
   const [routeReady,   setRouteReady]  = useState(false);
@@ -309,6 +312,11 @@ export default function HomeScreen() {
   const navStepsRef      = useRef<NavStep[]>([]);
   const closestIdxRef    = useRef(0);
   const lastAnimPosRef   = useRef<{ latitude: number; longitude: number } | null>(null);
+
+  // Auto-enable accessible route overlay when user has mobility needs
+  useEffect(() => {
+    setShowAccessibleRoutes(profile.accessibilityNeeds.some(n => MOBILITY_NEEDS.includes(n)));
+  }, [profile.accessibilityNeeds]);
 
   // ── sheet pan ──────────────────────────────────────────────────────────
   const translateY = useRef(new Animated.Value(T_COLLAPSED)).current;
@@ -591,6 +599,8 @@ export default function HomeScreen() {
         routeCoords={routeCoords}
         onUserLocation={handleUserLocation}
         showAccessibleRoutes={showAccessibleRoutes}
+        showAssistedEntrances={showAssistedEntrances}
+        accessibleEntranceCoords={accessibleEntranceCoords}
         isNavigating={isNavigating}
         satellite={satellite}
       />
@@ -664,12 +674,27 @@ export default function HomeScreen() {
             <View style={styles.handle} />
           </View>
 
+          {/* ── Persistent close button — always visible, top-left of sheet ── */}
+          <TouchableOpacity
+            style={styles.sheetCloseBtn}
+            onPress={() => {
+              setToText('');
+              setDestination(null);
+              setShowFrom(false);
+              setFromText('');
+              setOrigin(null);
+              clearRoute();
+              snapTo(0);
+            }}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="close" size={16} color="#888" />
+          </TouchableOpacity>
+
           {/* ── Route-ready card: shown after route is calculated ───────── */}
           {routeReady && !isNavigating && (
             <View style={styles.routeReadyCard}>
-              <TouchableOpacity style={styles.routeReadyClose} onPress={clearRoute} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="close" size={16} color="#888" />
-              </TouchableOpacity>
               <View style={styles.routeReadyInfo}>
                 <View style={styles.routeReadyBadge}>
                   <Ionicons
@@ -705,14 +730,6 @@ export default function HomeScreen() {
           {/* From field */}
           {showFrom && !routeReady && (
             <View style={styles.fromSection}>
-              <TouchableOpacity
-                style={styles.routeReadyClose}
-                onPress={() => { setShowFrom(false); setFromText(''); setOrigin(null); clearRoute(); }}
-                activeOpacity={0.7}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name="close" size={16} color="#888" />
-              </TouchableOpacity>
               <View style={styles.fromRow}>
                 <View style={styles.dotOrigin} />
                 <TextInput
@@ -1097,6 +1114,13 @@ const styles = StyleSheet.create({
     }),
   },
   startNavBtnText: { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: 0.2 },
+  sheetCloseBtn: {
+    position: 'absolute', top: 8, left: 12,
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: '#EEE',
+    justifyContent: 'center', alignItems: 'center',
+    zIndex: 10,
+  },
   routeReadyClose: {
     position: 'absolute', top: 4, left: 10,
     width: 26, height: 26, borderRadius: 13,

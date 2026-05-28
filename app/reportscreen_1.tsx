@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
+import { useUser } from '../context/UserContext';
 import {
   Alert,
   Image,
@@ -29,6 +30,7 @@ const PURPLE_LIGHT = '#F3EAFF';
 export default function ReportScreen1() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { addReport } = useUser();
 
   const [selected,     setSelected]     = useState<Set<string>>(new Set());
   const [otherChecked, setOtherChecked] = useState(false);
@@ -72,10 +74,25 @@ export default function ReportScreen1() {
   };
 
   const handleSubmit = () => {
-    Alert.alert('Report submitted!', 'Thank you for helping improve campus accessibility.', [
-      { text: 'OK', onPress: () => router.back() },
-    ]);
+    const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+    const problems = [...selected].map(id => PROBLEMS.find(p => p.id === id)?.label ?? id);
+    if (otherChecked && otherText.trim()) problems.push(otherText.trim());
+    const title = `${dateStr} - ${problems.join(', ')}`;
+
+    addReport({
+      id: Date.now().toString(),
+      title,
+      imageUri: photo ?? undefined,
+      date: dateStr,
+    });
+
     setSubmitted(true);
+    Alert.alert('Report submitted!', 'Thank you for helping improve campus accessibility.', [
+      {
+        text: 'OK',
+        onPress: () => router.replace('/home'),
+      },
+    ]);
   };
 
   const canSubmit = (selected.size > 0 || otherChecked) && !submitted;
